@@ -1653,7 +1653,15 @@
         }
 
         function resolveDialoguePresentation(name) {
-            const pilotSpeakerKeys = { Alice: 'alice', Bob: 'bob', Charlie: 'charlie' };
+            const pilotSpeakerKeys = {
+                Alice: 'alice',
+                爱丽丝: 'alice',
+                爱丽斯: 'alice',
+                Bob: 'bob',
+                鲍勃: 'bob',
+                Charlie: 'charlie',
+                查理: 'charlie'
+            };
             const pilotKey = pilotSpeakerKeys[name];
             if(pilotKey) {
                 return {

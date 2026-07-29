@@ -29,17 +29,11 @@ Invoke-Native { node -e "const fs=require('fs'); const source=fs.readFileSync('d
 $RuntimeDialogueParserCheck = @'
 const fs = require('fs');
 const source = fs.readFileSync('docs/dialogue-story.md', 'utf8');
-const marker = String.fromCharCode(96).repeat(3);
-const opening = marker + 'yaml';
-const openAt = source.indexOf(opening);
-if (openAt < 0 || source.indexOf(opening, openAt + opening.length) !== -1) {
+const fences = [...source.matchAll(/^```yaml\s*\r?\n([\s\S]*?)^```\s*$/gm)];
+if (fences.length !== 1) {
     throw new Error('Expected exactly one yaml fence in docs/dialogue-story.md');
 }
-const bodyStart = source.indexOf(String.fromCharCode(10), openAt) + 1;
-const closeAt = source.indexOf(marker, bodyStart);
-if (bodyStart === 0 || closeAt < 0 || source.indexOf(marker, closeAt + marker.length) !== -1) {
-    throw new Error('Expected exactly one yaml fence in docs/dialogue-story.md');
-}
+const body = fences[0][1];
 
 const entries = new Map();
 let entry = null;
@@ -50,7 +44,7 @@ const readScalar = value => {
     return trimmed.startsWith(quote) && trimmed.endsWith(quote) ? JSON.parse(trimmed) : trimmed;
 };
 
-for (const line of source.slice(bodyStart, closeAt).split(/\r?\n/)) {
+for (const line of body.split(/\r?\n/)) {
     let match = line.match(/^\s*-\s+id:\s*([^\s#]+)\s*$/);
     if (match) {
         if (entries.has(match[1])) throw new Error('Duplicate dialogue ID: ' + match[1]);
