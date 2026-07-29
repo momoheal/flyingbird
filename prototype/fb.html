@@ -1,0 +1,2476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>太空歌剧：星火燎原 (视觉重制版)</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #000; overflow: hidden; font-family: "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif; touch-action: none; user-select: none; color: #fff; }
+        canvas { display: block; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; }
+        .pointer-auto { pointer-events: auto; }
+        .hidden { display: none !important; }
+        
+        #hud-top { padding: 15px; }
+        #mission-panel { position: absolute; top: 12px; right: 12px; width: min(360px, calc(100vw - 24px)); box-sizing: border-box; background: linear-gradient(180deg, rgba(13,24,29,0.96), rgba(8,15,20,0.92)); border: 1px solid #3c6672; border-right: 4px solid #12b6d1; padding: 12px; font-family: monospace; text-align: left; color: #e9f7fa; box-shadow: 0 12px 28px rgba(0,0,0,.42); }
+        #mission-title { color: #f2fbfd; font-size: 17px; letter-spacing: 1px; font-weight: 800; }
+        #mission-subtitle { color: #a9cbd3; font-size: 14px; margin-top: 4px; }
+        .comm-head { display: flex; gap: 9px; align-items: center; margin-bottom: 8px; }
+        #comm-avatar { width: 42px; height: 42px; flex: 0 0 42px; background: rgba(7,14,18,.85); border: 1px solid #8fbf79; display: flex; align-items: center; justify-content: center; color: #b7ef8a; font-size: 14px; font-weight: 800; background-size: cover; background-position: center; filter: saturate(.72) sepia(.16); }
+        #comm-speaker { color: #80e6f5; font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+        #comm-text { color: #e9f7fa; font-size: 17px; line-height: 1.5; margin: 8px 0 10px; min-height: 62px; padding: 8px; background: rgba(7,14,18,.5); border: 1px solid rgba(143,191,121,.35); }
+        .comm-meta { border-top: 1px solid rgba(128,230,245,.25); padding-top: 12px; display: grid; gap: 7px; color: #a9cbd3; font-size: 14px; }
+        .comm-meta span { color: #e9f7fa; }
+        .comm-pilot { display: block; margin: 8px 0; padding: 6px 8px; background: rgba(7,14,18,.45); border: 1px solid rgba(143,191,121,.28); }
+        #comm-pilot-avatar { display: none; }
+        .comm-bar { height: 12px; background: #1a3038; border: 1px solid #3c6672; margin: 7px 0; }
+        #comm-hp-bar { height: 100%; width: 100%; background: linear-gradient(90deg,#36d46a,#a8f06a); }
+        #comm-ability { color: #80e6f5; font-size: 14px; }
+        #mission-panel::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .12; background: repeating-linear-gradient(180deg, transparent 0 3px, #9fda83 3px 4px); mix-blend-mode: screen; }
+        #boss-frame { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); width: min(620px, 54vw); background: rgba(34,18,15,0.88); border: 1px solid #8f4a36; border-bottom: 4px solid #c03a22; padding: 9px 12px; font-family: monospace; color: #ffe8dc; box-shadow: 0 10px 26px rgba(0,0,0,.36); }
+        #boss-name { color: #ffd0bd; font-size: 12px; margin-bottom: 5px; display: flex; justify-content: space-between; font-weight: 800; }
+        #boss-bar-wrap { height: 10px; background: #351713; border: 1px solid #8f4a36; }
+        #boss-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #c52018, #ff8d31); box-shadow: inset 0 1px 0 rgba(255,255,255,.55); }
+        #ability-pill { margin-top: 6px; color: #80e6f5; font-size: 12px; font-family: monospace; font-weight: 700; }
+        #loadout-line { margin-top: 4px; color: #d7c7a8; font-size: 11px; font-family: monospace; white-space: pre-line; overflow: hidden; max-width: 260px; max-height: 58px; }
+        #exp-bar-container { width: 100%; height: 5px; background: #d7e1e4; position: absolute; top: 0; left: 0; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+        #exp-bar { height: 100%; background: #00a9c8; width: 0%; transition: width 0.2s; box-shadow: inset 0 1px 0 rgba(255,255,255,.65);}
+        
+        #avatar-panel { display: none; align-items: center; background: rgba(13,24,29,0.88); padding: 10px; border: 1px solid #3c6672; border-left: 4px solid #12b6d1; backdrop-filter: blur(5px); color: #e9f7fa; box-shadow: 0 10px 24px rgba(0,0,0,.35);}
+        #avatar-box { width: 54px; height: 54px; background: rgba(7,14,18,.8); border: 1px solid #3c6672; margin-right: 15px; overflow: hidden; display: flex; justify-content: center; align-items: center; font-size: 13px; font-weight: 800; background-repeat: no-repeat; color: #a9cbd3; }
+        .stats-col { display: flex; flex-direction: column; width: 150px; }
+        .bar-container { width: 100%; height: 9px; background: #1a3038; margin-bottom: 5px; border: 1px solid #3c6672;}
+        #hp-bar { height: 100%; background: #0f0; width: 100%; transition: width 0.2s;}
+        #pilot-name-disp { font-size: 14px; color: #f2fbfd; font-weight: bold; letter-spacing: 1px; font-family: 'ZCOOL QingKe HuangYou', sans-serif;}
+
+        #dialogue-box {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 800px; 
+            background: rgba(12, 21, 27, 0.94); border: 1px solid #3c6672; border-left: 5px solid #12b6d1; padding: 18px;
+            display: flex; gap: 18px; box-shadow: 0 14px 34px rgba(0,0,0,.45); opacity: 0; transition: opacity 0.3s; pointer-events: auto; cursor: pointer; color: #e9f7fa;
+        }
+        #dialogue-box.show { opacity: 0; pointer-events: none; }
+        #dialogue-avatar { width: 72px; height: 72px; flex: 0 0 72px; font-size: 13px; font-weight: 800; background: rgba(7,14,18,.8); border: 1px solid #3c6672; padding: 0; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; color: #a9cbd3; }
+        #dialogue-name { font-size: 14px; color: #80e6f5; margin-bottom: 5px; font-family: monospace; font-weight: 800;}
+        #dialogue-text { font-size: 16px; line-height: 1.6; color: #e9f7fa; font-family: monospace; text-shadow: none;}
+
+        #rogue-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6, 12, 17, 0.86); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; color: #e9f7fa; }
+        .rogue-title { font-size: 30px; margin-bottom: 30px; letter-spacing: 5px; color: #f2fbfd; font-family: 'ZCOOL QingKe HuangYou';}
+        .rogue-note { max-width: 780px; color: #a9cbd3; margin: -18px 0 24px; text-align: center; line-height: 1.5; font-size: 13px; }
+        #cards-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .upgrade-card { background: rgba(13,24,29,.92); border: 1px solid #3c6672; width: 220px; padding: 18px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; color: #e9f7fa; box-shadow: 0 10px 22px rgba(0,0,0,.32); position: relative; overflow: hidden; }
+        .upgrade-card::before { content: ""; position: absolute; inset: 0; background-image: var(--ui-frame); background-size: cover; background-position: center; opacity: .16; pointer-events: none; mix-blend-mode: screen; }
+        .upgrade-card:hover { transform: translateY(-5px); border-color: #12b6d1; background: rgba(18,34,41,.96); box-shadow: 0 18px 30px rgba(0,0,0,.36);}
+        .branch-art { width: 58px; height: 58px; margin-bottom: 12px; background: center / contain no-repeat; flex: 0 0 58px; }
+        .card-empire { border-top: 3px solid #33ccff; }
+        .card-rebel { border-top: 3px solid #ff6600; }
+        .card-type { font-size: 12px; color: #a9cbd3; margin-bottom: 10px; font-family: monospace; position: relative;}
+        .card-name { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #f2fbfd; position: relative;}
+        .card-desc { font-size: 14px; color: #c4dbe0; line-height: 1.4; position: relative; }
+
+        #center-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 15%, #162932 0%, #071017 42%, #02070a 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: #e9f7fa; }
+        #pilot-selection { display: flex; gap: 22px; margin-bottom: 34px; flex-wrap: wrap; justify-content: center; }
+        .pilot-card { background: rgba(6,11,15,.94); border: 1px solid #49636b; padding: 18px; width: 280px; text-align: center; cursor: pointer; transition: 0.3s; color: #e9f7fa; box-shadow: 0 16px 34px rgba(0,0,0,.48); }
+        .pilot-card.active { border-color: #e0a83a; background: rgba(20,22,20,.97); box-shadow: 0 18px 36px rgba(0,0,0,.55);}
+        .pilot-portrait { width: 96px; height: 96px; margin: 0 auto 12px; border: 1px solid #5c737b; background: #03070a center/cover no-repeat; }
+        .pilot-ship { width: 210px; height: 140px; margin: 0 auto 12px; background-color: #101923; background-position: center; background-size: contain; background-repeat: no-repeat; border: 1px solid rgba(28, 43, 54, .55); border-radius: 6px; filter: contrast(1.18) saturate(1.08) brightness(.96); }
+        button { padding: 12px 40px; font-size: 18px; color: #fff; background: #12323b; border: 1px solid #0b232a; cursor: pointer; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 8px 18px rgba(0,0,0,.22);}
+        button:hover { background: #1b4c59; }
+        .story-intro { max-width: 600px; color: #a9cbd3; font-size: 14px; line-height: 1.6; margin-bottom: 20px; border-left: 3px solid #12b6d1; padding-left: 15px;}
+        #toast { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); background: rgba(245,250,251,0.94); border: 1px solid #8faab2; padding: 12px 18px; color: #102028; font-family: monospace; z-index: 40; opacity: 0; transition: opacity .25s; pointer-events: none; box-shadow: 0 10px 24px rgba(0,0,0,.25); }
+        #toast.show { opacity: 1; }
+        #transition-screen { position: absolute; inset: 0; z-index: 90; background: rgba(226,236,239,.96); display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity .35s; }
+        #transition-screen.show { opacity: 1; }
+        #transition-panel { width: min(760px, 88vw); border: 1px solid #3c6672; border-left: 5px solid #12b6d1; background: rgba(13,24,29,.94); padding: 26px; font-family: monospace; box-shadow: 0 16px 34px rgba(0,0,0,.4); color: #e9f7fa; }
+        #transition-title { font-size: 24px; color: #f2fbfd; letter-spacing: 3px; margin-bottom: 10px; }
+        #transition-text { color: #a9cbd3; line-height: 1.7; }
+        .route-map { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 16px; width: min(900px, 92vw); }
+        .route-node { background: rgba(13,24,29,.92); border: 1px solid #3c6672; padding: 16px; min-height: 150px; color: #e9f7fa; box-shadow: 0 10px 20px rgba(0,0,0,.32); }
+        .route-node::before { content: ""; display: block; width: 46px; height: 46px; margin-bottom: 10px; background: var(--route-icon, none) center/contain no-repeat; }
+        .route-node:nth-child(1)::before { background-image: url('../assets/ch01/fx/sf_ch01_fx_laser_core_512.png'); }
+        .route-node:nth-child(2)::before { background-image: url('../assets/ch01/ui/sf_ch01_ui_route_control_256.png'); }
+        .route-node:nth-child(3)::before { background-image: url('../assets/ch01/ui/sf_ch01_ui_route_defense_256.png'); }
+        .route-node.active { border-color: #d69b2c; box-shadow: 0 16px 28px rgba(0,0,0,.36); }
+        .route-node h3 { margin: 0 0 10px; font-size: 18px; color: #f2fbfd; }
+        .route-node p { margin: 0; color: #c4dbe0; font-size: 13px; line-height: 1.45; }
+    </style>
+</head>
+<body>
+    <!-- 游戏主画布 -->
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- 离屏画布：用于预渲染背景星云，提高性能 -->
+    <canvas id="bgCanvas" style="display:none;"></canvas>
+
+    <div id="ui-layer">
+        <div id="exp-bar-container"><div id="exp-bar"></div></div>
+        <div id="hud-top" class="hidden">
+            <div id="avatar-panel">
+                <div id="avatar-box"><span id="avatar-emoji">SYS</span></div>
+                <div class="stats-col">
+                    <div id="pilot-name-disp">爱丽斯 | 赤色锋刃</div>
+                    <div class="bar-container"><div id="hp-bar"></div></div>
+                    <div id="ability-pill">主动技能：准备中</div>
+                    <div id="loadout-line">改装：未装配</div>
+                </div>
+            </div>
+            <div id="boss-frame" class="hidden">
+                <div id="boss-name"><span>缝合航母</span><span id="boss-phase">PHASE 1</span></div>
+                <div id="boss-bar-wrap"><div id="boss-bar"></div></div>
+            </div>
+            <div id="mission-panel">
+                <div class="comm-head">
+                    <div id="comm-avatar">SYS</div>
+                    <div>
+                        <div id="comm-speaker">指挥频道</div>
+                        <div id="mission-title">第一章：镇压与谎言</div>
+                    </div>
+                </div>
+                <div id="comm-text">信号压低。A 区有断续搜救信标，先确认目标，再开火。</div>
+                <div class="comm-pilot">
+                    <div id="comm-pilot-avatar">SYS</div>
+                    <div>
+                        <div>驾驶员：<span id="comm-pilot">未部署</span></div>
+                        <div class="comm-bar"><div id="comm-hp-bar"></div></div>
+                        <div id="comm-ability">主动技能：准备中</div>
+                    </div>
+                </div>
+                <div class="comm-meta">
+                    <div>区域：<span id="mission-subtitle">A 区小行星带 // 搜救信号异常</span></div>
+                    <div>波次：<span id="comm-wave">0/15</span></div>
+                    <div id="comm-refit">改装：未装配</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="dialogue-box">
+            <div id="dialogue-avatar">SYS</div>
+            <div>
+                <div id="dialogue-name">SYS</div>
+                <div id="dialogue-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="rogue-screen" class="hidden pointer-auto">
+        <div class="rogue-title">TACTICAL_REFIT_READY // 选择改装路线</div>
+        <div id="rogue-note" class="rogue-note">战斗暂停。选择一项模块后继续推进第一章。</div>
+        <div id="cards-container"></div>
+    </div>
+    <div id="toast">MISSION EVENT</div>
+    <div id="transition-screen">
+        <div id="transition-panel">
+            <div id="transition-title">DEPLOYMENT</div>
+            <div id="transition-text">战术链路建立中。</div>
+        </div>
+    </div>
+
+    <div id="center-screen" class="pointer-auto">
+        <div id="start-menu">
+            <h1 style="text-align:center; letter-spacing: 10px; font-family:'ZCOOL QingKe HuangYou'; font-size: 50px;">星火燎原</h1>
+            <div class="story-intro">
+                极权与深渊的碰撞。帝国统帅部派出了“裁决者”小队平定边境。<br>
+                机库闸门已开启。选择你的战机。
+            </div>
+            <div id="pilot-selection">
+                <div class="pilot-card active" data-pilot="alice">
+                    <div class="pilot-portrait" data-portrait="alice"></div>
+                    <div class="pilot-ship" data-ship="alice"></div>
+                    <div style="color:#ff3366; font-weight:bold; font-size: 18px;">爱丽斯</div>
+                    <div style="color:#344c54; font-size: 12px; margin-bottom:10px;">轻型 / 高机动 / 广角</div>
+                    <div style="font-size:12px; color:#243941; text-align:left;">座驾：「赤色锋刃」<br>前掠翼突击机，专为突破帝国防线打造。</div>
+                </div>
+                <div class="pilot-card" data-pilot="bob">
+                    <div class="pilot-portrait" data-portrait="bob"></div>
+                    <div class="pilot-ship" data-ship="bob"></div>
+                    <div style="color:#33ccff; font-weight:bold; font-size: 18px;">鲍勃</div>
+                    <div style="color:#344c54; font-size: 12px; margin-bottom:10px;">重型 / 穿透 / 逻辑</div>
+                    <div style="font-size:12px; color:#243941; text-align:left;">座驾：「逻辑矩阵」<br>黑色三角飞行翼，神经直连，绝对理性。</div>
+                </div>
+                <div class="pilot-card" data-pilot="charlie">
+                    <div class="pilot-portrait" data-portrait="charlie"></div>
+                    <div class="pilot-ship" data-ship="charlie"></div>
+                    <div style="color:#33ff33; font-weight:bold; font-size: 18px;">查理</div>
+                    <div style="color:#344c54; font-size: 12px; margin-bottom:10px;">装甲 / 护盾 / 稳重</div>
+                    <div style="font-size:12px; color:#243941; text-align:left;">座驾：「铁壁号」<br>双体厚甲战机，挂载重型火炮的空中堡垒。</div>
+                </div>
+            </div>
+            <div style="text-align: center;"><button id="startBtn">部署出击</button></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        
+        // 游戏数据
+        const PILOTS = {
+            alice: { name: '爱丽斯', shipName:'赤色锋刃', color: '#ff3366', spd: 0.35, fr: 6, r: 18, maxHp: 90, ability: '红移冲刺', abilityHint: '无敌冲刺并标记穿过的敌人' },
+            bob: { name: '鲍勃', shipName:'逻辑矩阵', color: '#33ccff', spd: 0.22, fr: 9, r: 21, maxHp: 112, ability: '天穹追踪协议', abilityHint: '全屏锁定并发射追踪导弹' },
+            charlie: { name: '查理', shipName:'铁壁号', color: '#33ff33', spd: 0.22, fr: 10, r: 25, maxHp: 145, ability: '堡垒齐射', abilityHint: '展开护盾并释放侧舷激光' }
+        };
+
+        const UPGRADES = [
+            { id: 'emp_pierce', type: 'empire', name: '穿甲校准', desc: '把旧式穿甲弹头接入主炮供弹链，弹体可贯穿轻型目标。' },
+            { id: 'emp_laser', type: 'empire', name: '切割光束', desc: '临时接入高能线性光束，用于切开装甲与小行星碎块。' },
+            { id: 'reb_spread', type: 'rebel', name: '废土散射', desc: '暴力焊接副炮，增加弹道数量。' },
+            { id: 'reb_haste', type: 'rebel', name: '狂热超载', desc: '解除引擎限制，射速大幅提升。' },
+            { id: 'mix_blackbox', type: 'empire', name: '黑匣索引', desc: '扩大晶体牵引范围，并在章节结算时保留更多可用废料。' },
+            { id: 'def_armor', type: 'rebel', name: '复合装甲', desc: '提高最大装甲，并降低碰撞伤害。' }
+        ];
+
+        UPGRADES.push({ id: 'def_medkit', type: 'rebel', name: '战地医疗舱', desc: '装备后，精英目标有概率掉落医疗晶体；拾取可恢复装甲。' });
+
+        const CHAPTER_ONE = {
+            title: '第一章：镇压与谎言',
+            subtitle: 'A 区小行星带 // 搜救信号异常',
+            targetWavesBeforeBoss: 15,
+            waveIntervalFrames: 145,
+            maxActiveMinions: 18,
+            waveCounts: [1,1,2,2,2,3,3,3,4,4,4,5,5,5,6],
+            eliteWaves: [5, 10, 14],
+            dropsTarget: 9,
+            asteroidIntervalFrames: 190
+        };
+
+        const CHAPTER_TWO = {
+            title: '第二章：屠杀与抉择',
+            subtitle: 'B 区矿务航线 // 紧急护航校验',
+            targetWaves: 4,
+            waveIntervalFrames: 190,
+            scanTargets: 3,
+            convoyHp: 180,
+            maxActiveMinions: 12
+        };
+
+        const ASSET_PATHS = {
+            backgrounds: {
+                ch01: '../art/sf_ch01_bg_sector_a_scrapyard_source.png',
+                ch02: '../assets/ch02/bg/sf_ch02_bg_b_sector_mining_route_768x1376.png'
+            },
+            players: {
+                alice: '../assets/ch01/player/sf_ch01_player_alice_top_512.png',
+                bob: '../assets/ch01/player/sf_ch01_player_bob_top_512.png',
+                charlie: '../assets/ch01/player/sf_ch01_player_charlie_top_512.png'
+            },
+            enemies: {
+                empire: '../assets/ch01/enemy/sf_ch01_enemy_empire_drone_a_256.png',
+                rebel: '../assets/ch01/enemy/sf_ch01_enemy_rebel_skiff_a_256.png',
+                elite: '../assets/ch01/enemy/sf_ch01_enemy_rebel_elite_salvager_512.png'
+            },
+            bosses: {
+                1: '../assets/ch01/boss/sf_ch01_boss_stitched_carrier_phase01_2048.png',
+                2: '../assets/ch01/boss/sf_ch01_boss_stitched_carrier_phase02_damaged_2048.png',
+                3: '../assets/ch01/boss/sf_ch01_boss_stitched_carrier_phase03_core_2048.png'
+            },
+            fx: {
+                laser: '../assets/ch01/fx/sf_ch01_fx_laser_core_512.png'
+            },
+            ui: {
+                moduleFrame: '../assets/ch01/ui/sf_ch01_ui_card_module_frame_512.png',
+                routeControl: '../assets/ch01/ui/sf_ch01_ui_route_control_256.png',
+                routeDefense: '../assets/ch01/ui/sf_ch01_ui_route_defense_256.png'
+            },
+            portraits: {
+                alice: '../assets/ch01/portrait/sf_ch01_portrait_alice_comm_512.png',
+                bob: '../assets/ch01/portrait/sf_ch01_portrait_bob_comm_512.png',
+                charlie: '../assets/ch01/portrait/sf_ch01_portrait_charlie_comm_512.png',
+                command: '../assets/ch01/portrait/sf_ch01_portrait_command_channel_512.png',
+                rebel: '../assets/ch01/portrait/sf_ch01_portrait_rebel_commander_512.png'
+            },
+            ch02: {
+                convoy: '../assets/ch02/convoy/sf_ch02_convoy_refugee_hauler_1024.png',
+                enemies: {
+                    interceptor: '../assets/ch02/enemy/sf_ch02_enemy_quarantine_interceptor_512.png',
+                    drone: '../assets/ch02/enemy/sf_ch02_enemy_inspection_drone_512.png'
+                },
+                bosses: {
+                    purifier: '../assets/ch02/boss/sf_ch02_boss_purification_cruiser_2048.png',
+                    runner: '../assets/ch02/boss/sf_ch02_boss_convoy_runner_2048.png'
+                },
+                fx: {
+                    beacon: '../assets/ch02/fx/sf_ch02_fx_distress_beacon_sheet_1024x512.png',
+                    scan: '../assets/ch02/fx/sf_ch02_fx_quarantine_scan_sheet_1024x512.png'
+                },
+                ui: {
+                    protect: '../assets/ch02/ui/sf_ch02_ui_route_protect_256.png',
+                    execute: '../assets/ch02/ui/sf_ch02_ui_route_execute_256.png'
+                }
+            }
+        };
+
+        let state = 'MENU';
+        let frame = 0, score = 0, chapterFrame = 0;
+        let pKey = 'alice';
+        let bgScrollY = 0;
+        let chapter = 1, branch = null, scansCollected = 0, convoy = null, chapterTwoWaves = 0;
+        // Chapter 2 branch bosses deliberately live outside the Chapter 1 `boss` flow.
+        let chapterTwoBoss = null;
+        let chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
+        let chapterTwoVictory = null, chapterTwoOutroShown = false;
+        let player, boss = null, bossSpawned = false, chapterCleared = false, wavesSpawned = 0, enemiesDestroyed = 0, lastEliteIndex = -1;
+        let rescuePod = null, rescueScanProgress = 0, openingFrame = 0, openingTimers = [];
+        let bossDialogueLock = false;
+        let bossCrash = null;
+        let endingStarted = false;
+        let combatBarkCooldown = 0;
+        let pierceFeedbackCooldown = 0;
+        let entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
+        let mods = { pierce: false, laser: false, shield: 0, spread: 0, haste: 1, magnet: 40, armor: 0 };
+        let cargo = [], equippedRogue = {}, salvage = 0, dropsGiven = 0;
+        let dlgQueue = [], typeTimer;
+        let dialogueEntries = new Map();
+        let dialogueSourceLoaded = false;
+        let dialogueLoadPromise = null;
+        let dialogueLoadWarned = false;
+        const FALLBACK_DIALOGUE_ENTRIES = new Map([
+            ['ch01.deploy', { speaker: '指挥频道', default: '战机已离港。穿过小行星带，清除叛军拦截艇。', pilots: {} }],
+            ['ch01.boss_intro', { speaker: '叛军指挥官', default: '你们赶得太晚。货船和航道，现在都归我。', pilots: {} }],
+            ['ch01.debrief', { speaker: '指挥频道', default: '航母已失能。回收残骸，立刻返回前进基地。', pilots: {} }]
+        ]);
+        const SPRITES = {};
+
+        function parseDialogueMarkdown(markdown) {
+            const fences = [...markdown.matchAll(/^```yaml\s*\r?\n([\s\S]*?)^```\s*$/gm)];
+            if(fences.length !== 1) throw new Error('Expected exactly one YAML dialogue block');
+
+            const entries = new Map();
+            let entry = null;
+            let inPilots = false;
+            const readScalar = value => {
+                const trimmed = value.trim();
+                return trimmed.startsWith('"') && trimmed.endsWith('"') ? JSON.parse(trimmed) : trimmed;
+            };
+
+            for(const line of fences[0][1].split(/\r?\n/)) {
+                let match = line.match(/^\s*-\s+id:\s*([^\s#]+)\s*$/);
+                if(match) {
+                    if(entries.has(match[1])) throw new Error(`Duplicate dialogue id: ${match[1]}`);
+                    entry = { speaker: '', default: '', pilots: {} };
+                    entries.set(match[1], entry);
+                    inPilots = false;
+                    continue;
+                }
+                if(!entry) continue;
+                match = line.match(/^\s{4}speaker:\s*(.+)$/);
+                if(match) {
+                    entry.speaker = readScalar(match[1]);
+                    inPilots = false;
+                    continue;
+                }
+                match = line.match(/^\s{4}default:\s*(.+)$/);
+                if(match) {
+                    entry.default = readScalar(match[1]);
+                    inPilots = false;
+                    continue;
+                }
+                if(/^\s{4}pilots:\s*$/.test(line)) {
+                    inPilots = true;
+                    continue;
+                }
+                match = inPilots && line.match(/^\s{6}([^:\s]+):\s*(.+)$/);
+                if(match) entry.pilots[match[1]] = readScalar(match[2]);
+            }
+
+            for(const [id, parsed] of entries) {
+                if(!parsed.speaker || !parsed.default) throw new Error(`Incomplete dialogue entry: ${id}`);
+            }
+            if(!entries.size) throw new Error('No dialogue entries found');
+            return entries;
+        }
+
+        async function loadDialogueSource() {
+            if(dialogueLoadPromise) return dialogueLoadPromise;
+            dialogueLoadPromise = (async () => {
+                try {
+                    const response = await fetch('../docs/dialogue-story.md');
+                    if(!response.ok) throw new Error(`Dialogue request failed: ${response.status}`);
+                    const parsed = parseDialogueMarkdown(await response.text());
+                    if(!parsed.size) throw new Error('Dialogue source was empty');
+                    dialogueEntries = parsed;
+                } catch(error) {
+                    if(!dialogueLoadWarned) {
+                        console.warn('Unable to load dialogue source; using fallback dialogue.', error);
+                        dialogueLoadWarned = true;
+                    }
+                    dialogueEntries = new Map(FALLBACK_DIALOGUE_ENTRIES);
+                }
+                dialogueSourceLoaded = true;
+                return dialogueEntries;
+            })();
+            return dialogueLoadPromise;
+        }
+
+        function resolveDialogue(id) {
+            const entry = dialogueEntries.get(id);
+            if(!entry) return { speaker: 'SYSTEM', text: `[MISSING_DIALOGUE: ${id}]` };
+            const speaker = entry.speaker === '指挥频道' ? 'SYSTEM' : (entry.speaker === '叛军指挥官' ? 'REBEL_COMMANDER' : entry.speaker);
+            return { speaker, text: entry.pilots[pKey] || entry.default };
+        }
+
+        function showDialogueId(id) {
+            const dialogue = resolveDialogue(id);
+            showDialogue(dialogue.speaker, dialogue.text);
+        }
+
+        function loadSprite(path) {
+            const img = new Image();
+            img.src = path;
+            return img;
+        }
+
+        function loadAssets() {
+            SPRITES.backgrounds = Object.fromEntries(Object.entries(ASSET_PATHS.backgrounds).map(([key, path]) => [key, loadSprite(path)]));
+            Object.values(SPRITES.backgrounds).forEach(sprite => sprite.onload = () => {
+                if(bgCanvas.width > 0 && bgCanvas.height > 0) generateBackground();
+            });
+            SPRITES.players = Object.fromEntries(Object.entries(ASSET_PATHS.players).map(([key, path]) => [key, loadSprite(path)]));
+            SPRITES.enemies = Object.fromEntries(Object.entries(ASSET_PATHS.enemies).map(([key, path]) => [key, loadSprite(path)]));
+            SPRITES.bosses = Object.fromEntries(Object.entries(ASSET_PATHS.bosses).map(([key, path]) => [key, loadSprite(path)]));
+            SPRITES.fx = Object.fromEntries(Object.entries(ASSET_PATHS.fx).map(([key, path]) => [key, loadSprite(path)]));
+            SPRITES.ui = Object.fromEntries(Object.entries(ASSET_PATHS.ui).map(([key, path]) => [key, loadSprite(path)]));
+            SPRITES.portraits = Object.fromEntries(Object.entries(ASSET_PATHS.portraits).map(([key, path]) => [key, loadSprite(path)]));
+            SPRITES.ch02 = {
+                convoy: loadSprite(ASSET_PATHS.ch02.convoy),
+                enemies: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.enemies).map(([key, path]) => [key, loadSprite(path)])),
+                bosses: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.bosses).map(([key, path]) => [key, loadSprite(path)])),
+                fx: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.fx).map(([key, path]) => [key, loadSprite(path)])),
+                ui: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.ui).map(([key, path]) => [key, loadSprite(path)]))
+            };
+            hydrateStaticArt();
+        }
+
+        function isLoaded(img) {
+            return img && img.complete && img.naturalWidth > 0;
+        }
+
+        function hydrateStaticArt() {
+            document.querySelectorAll('[data-ship]').forEach(el => {
+                const key = el.dataset.ship;
+                el.style.backgroundImage = `url(${ASSET_PATHS.players[key]})`;
+            });
+            document.querySelectorAll('[data-portrait]').forEach(el => {
+                const key = el.dataset.portrait;
+                el.style.backgroundImage = `url(${ASSET_PATHS.portraits[key]})`;
+            });
+            document.documentElement.style.setProperty('--ui-frame', `url(${ASSET_PATHS.ui.moduleFrame})`);
+        }
+
+        loadAssets();
+        loadDialogueSource();
+
+        // --- 美术渲染引擎 (纯代码绘制精美贴图) ---
+
+        // 生成视差星云背景
+        function generateBackground() {
+            const sprite = SPRITES.backgrounds && SPRITES.backgrounds[chapter === 2 ? 'ch02' : 'ch01'];
+            if(isLoaded(sprite)) {
+                // Preserve the supplied portrait background as one complete scroll tile.
+                const scale = canvas.width / sprite.naturalWidth;
+                const w = sprite.naturalWidth * scale;
+                const h = sprite.naturalHeight * scale;
+                bgCanvas.width = canvas.width;
+                bgCanvas.height = Math.ceil(h) * 2;
+                bgCtx.drawImage(sprite, 0, 0, w, h);
+                bgCtx.drawImage(sprite, 0, h, w, h);
+                return;
+            }
+
+            bgCanvas.width = canvas.width;
+            bgCanvas.height = canvas.height * 2; // Fallback tile for procedural background.
+            
+            // 底色深空黑
+            bgCtx.fillStyle = '#020205'; 
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+            // 绘制星云 (使用径向渐变叠加)
+            for(let i=0; i<5; i++) {
+                let x = Math.random() * bgCanvas.width;
+                let y = Math.random() * bgCanvas.height;
+                let r = Math.random() * 300 + 200;
+                let grad = bgCtx.createRadialGradient(x, y, 0, x, y, r);
+                // 帝国/叛军风格的暗红与幽蓝星云交织
+                let colors = [
+                    ['rgba(20, 10, 30, 0.5)', 'rgba(20, 10, 30, 0)'],
+                    ['rgba(10, 20, 40, 0.4)', 'rgba(10, 20, 40, 0)'],
+                    ['rgba(40, 10, 10, 0.3)', 'rgba(40, 10, 10, 0)']
+                ];
+                let c = colors[Math.floor(Math.random()*colors.length)];
+                grad.addColorStop(0, c[0]); grad.addColorStop(1, c[1]);
+                
+                bgCtx.globalCompositeOperation = 'screen';
+                bgCtx.fillStyle = grad;
+                bgCtx.beginPath(); bgCtx.arc(x, y, r, 0, Math.PI*2); bgCtx.fill();
+            }
+
+            // 绘制星辰
+            bgCtx.globalCompositeOperation = 'source-over';
+            for(let i=0; i<300; i++) {
+                let x = Math.random() * bgCanvas.width;
+                let y = Math.random() * bgCanvas.height;
+                let s = Math.random() * 2;
+                bgCtx.fillStyle = `rgba(255,255,255,${Math.random()})`;
+                bgCtx.beginPath(); bgCtx.arc(x, y, s, 0, Math.PI*2); bgCtx.fill();
+            }
+        }
+
+        // 绘制玩家战机 (俯视图)
+        function drawReadableSprite(ctx, sprite, x, y, w, h) {
+            ctx.save();
+            ctx.globalAlpha = 1;
+            ctx.filter = 'none';
+            ctx.shadowColor = 'rgba(0,0,0,0.72)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 3;
+            ctx.drawImage(sprite, x, y, w, h);
+            ctx.restore();
+        }
+
+        function drawSolidBossSprite(ctx, sprite, x, y, w, h) {
+            ctx.save();
+            ctx.globalAlpha = 1;
+            ctx.filter = 'none';
+            ctx.shadowColor = 'rgba(0,0,0,.9)';
+            ctx.shadowBlur = 16;
+            ctx.shadowOffsetY = 5;
+            ctx.fillStyle = 'rgba(0,0,0,.42)';
+            ctx.beginPath();
+            ctx.ellipse(0, h * 0.08, w * 0.48, h * 0.42, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.drawImage(sprite, x, y, w, h);
+            ctx.restore();
+        }
+
+        function drawSolidPlayerSprite(ctx, sprite, x, y, w, h) {
+            ctx.save();
+            ctx.globalAlpha = 1;
+            ctx.filter = 'none';
+            ctx.shadowColor = 'rgba(0,0,0,.72)';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 4;
+            ctx.drawImage(sprite, x, y, w, h);
+            ctx.shadowColor = 'transparent';
+            ctx.filter = 'contrast(1.16) saturate(1.08)';
+            ctx.drawImage(sprite, x, y, w, h);
+            ctx.restore();
+        }
+
+        function drawShip(ctx, type, color, size) {
+            const sprite = SPRITES.players && SPRITES.players[type];
+            if(isLoaded(sprite)) {
+                const drawSize = size * 2.7;
+                drawSolidPlayerSprite(ctx, sprite, -drawSize/2, -drawSize/2, drawSize, drawSize);
+                return;
+            }
+            ctx.save();
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+            ctx.lineWidth = 2;
+            
+            if (type === 'alice') {
+                // 赤色锋刃 - 前掠翼轻型机
+                ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(0, -size); // 机鼻
+                ctx.lineTo(size*0.3, -size*0.2); // 驾驶舱侧
+                ctx.lineTo(size, -size*0.4); // 前掠翼尖
+                ctx.lineTo(size*0.4, size*0.5); // 翼根后部
+                ctx.lineTo(size*0.2, size*0.8); // 尾部引擎侧
+                ctx.lineTo(-size*0.2, size*0.8);
+                ctx.lineTo(-size*0.4, size*0.5);
+                ctx.lineTo(-size, -size*0.4);
+                ctx.lineTo(-size*0.3, -size*0.2);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                
+                // 驾驶舱
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.ellipse(0, -size*0.2, size*0.15, size*0.3, 0, 0, Math.PI*2); ctx.fill();
+                
+                // 引擎火光
+                ctx.fillStyle = '#fa0'; ctx.shadowBlur = 20; ctx.shadowColor = '#f00';
+                ctx.beginPath(); ctx.arc(0, size*0.8, size*0.3, 0, Math.PI*2); ctx.fill();
+            } 
+            else if (type === 'bob') {
+                // 逻辑矩阵 - 黑色三角隐形机
+                ctx.fillStyle = '#0a0a0c'; ctx.strokeStyle = '#445';
+                ctx.beginPath();
+                ctx.moveTo(0, -size);
+                ctx.lineTo(size*1.2, size*0.6);
+                ctx.lineTo(0, size*0.4); // 内凹尾部
+                ctx.lineTo(-size*1.2, size*0.6);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                
+                // 霓虹能量线
+                ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.shadowBlur = 15;
+                ctx.beginPath(); ctx.moveTo(0, -size*0.5); ctx.lineTo(0, size*0.2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-size*0.6, size*0.2); ctx.lineTo(size*0.6, size*0.2); ctx.stroke();
+                
+                // 线性推进器
+                ctx.fillStyle = color; ctx.shadowBlur = 20;
+                ctx.fillRect(-size*0.8, size*0.5, size*0.4, size*0.1);
+                ctx.fillRect(size*0.4, size*0.5, size*0.4, size*0.1);
+            }
+            else if (type === 'charlie') {
+                // 铁壁号 - 双体装甲机
+                ctx.fillStyle = '#2c352c'; ctx.strokeStyle = '#556'; // 军绿色
+                
+                // 左侧装甲舱
+                ctx.fillRect(-size*0.9, -size*0.5, size*0.6, size*1.5);
+                // 右侧装甲舱
+                ctx.fillRect(size*0.3, -size*0.5, size*0.6, size*1.5);
+                
+                // 中间连接体与驾驶舱
+                ctx.fillStyle = '#1c251c';
+                ctx.beginPath(); ctx.rect(-size*0.3, -size*0.2, size*0.6, size); ctx.fill(); ctx.stroke();
+                
+                // 驾驶舱玻璃
+                ctx.fillStyle = '#fa0'; ctx.shadowBlur = 5; ctx.shadowColor = '#fa0';
+                ctx.fillRect(-size*0.15, -size*0.1, size*0.3, size*0.2);
+                
+                // 粗壮的尾焰
+                ctx.fillStyle = '#0f0'; ctx.shadowBlur = 20; ctx.shadowColor = '#0f0';
+                ctx.beginPath(); ctx.arc(-size*0.6, size, size*0.2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(size*0.6, size, size*0.2, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // 绘制敌人 (帝国菱形战机 / 叛军废土飞船)
+        function drawEnemy(ctx, type, size, kind='scout') {
+            const chapterTwoKey = type === 'ch02_drone' ? 'drone' : type === 'ch02_interceptor' ? 'interceptor' : null;
+            const chapterTwoSprite = chapterTwoKey && SPRITES.ch02 && SPRITES.ch02.enemies[chapterTwoKey];
+            if(isLoaded(chapterTwoSprite)) {
+                const drawSize = size * 3.1;
+                drawReadableSprite(ctx, chapterTwoSprite, -drawSize/2, -drawSize/2, drawSize, drawSize);
+                return;
+            }
+            const sprite = SPRITES.enemies && SPRITES.enemies[kind === 'elite' ? 'elite' : type];
+            if(isLoaded(sprite)) {
+                const drawSize = size * (kind === 'elite' ? 3.45 : 2.75);
+                drawReadableSprite(ctx, sprite, -drawSize/2, -drawSize/2, drawSize, drawSize);
+                return;
+            }
+            ctx.save();
+            if (type === 'empire') {
+                ctx.fillStyle = '#ddd'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                ctx.shadowBlur = 10; ctx.shadowColor = '#3cf';
+                ctx.beginPath();
+                ctx.moveTo(0, -size); ctx.lineTo(size*0.6, 0); ctx.lineTo(0, size*0.8); ctx.lineTo(-size*0.6, 0);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                // 蓝光引擎
+                ctx.fillStyle = '#3cf'; ctx.fillRect(-size*0.2, size*0.6, size*0.4, size*0.3);
+            } else {
+                ctx.fillStyle = '#432'; ctx.strokeStyle = '#211'; ctx.lineWidth = 2;
+                ctx.shadowBlur = 5; ctx.shadowColor = '#000';
+                // 极其不规则的废铁造型
+                ctx.beginPath();
+                ctx.moveTo(-size*0.2, -size); ctx.lineTo(size*0.5, -size*0.8); ctx.lineTo(size*0.8, -size*0.2);
+                ctx.lineTo(size*0.6, size*0.8); ctx.lineTo(size*0.1, size); ctx.lineTo(-size*0.7, size*0.6);
+                ctx.lineTo(-size*0.9, 0);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                // 锈迹与补丁
+                ctx.fillStyle = '#631'; ctx.fillRect(-size*0.3, -size*0.2, size*0.4, size*0.4);
+                // 黑烟尾迹效果 (使用深色阴影)
+                ctx.fillStyle = '#f30'; ctx.shadowColor = '#000'; ctx.shadowBlur = 20;
+                ctx.beginPath(); ctx.arc(0, size*0.8, size*0.3, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawChapterTwoBossSprite(key, x, y, width, height) {
+            const sprite = SPRITES.ch02 && SPRITES.ch02.bosses[key];
+            if(!isLoaded(sprite)) return false;
+            drawReadableSprite(ctx, sprite, x - width / 2, y - height / 2, width, height);
+            return true;
+        }
+
+        // --- 核心游戏类 ---
+
+        class Player {
+            constructor() {
+                this.x = canvas.width/2; this.y = canvas.height*0.8; this.tx=this.x; this.ty=this.y;
+                let info = PILOTS[pKey];
+                this.r = info.r; this.hp = info.maxHp; this.maxHp = info.maxHp; this.exp = 0; this.lvl = 1; this.maxExp = 5;
+                this.abilityCharge = 0; this.abilityActive = 0; this.invuln = 0;
+            }
+            update() {
+                if(state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH01_BRIEFING' || state === 'CH01_RESCUE') {
+                    let spd = PILOTS[pKey].spd;
+                    if(this.abilityActive > 0 && pKey === 'alice') spd *= 1.65;
+                    this.x += (this.tx-this.x)*spd; this.y += (this.ty-this.y)*spd;
+                    this.x = Math.max(this.r, Math.min(canvas.width-this.r, this.x));
+                    this.y = Math.max(this.r, Math.min(canvas.height-this.r, this.y));
+                    
+                    let fr = Math.floor(PILOTS[pKey].fr / mods.haste);
+                    // Scanning remains an active flight state: keep automatic fire enabled
+                    // during rescue/beacon scans, while the opening briefing stays weapon-locked.
+                    if((state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH01_RESCUE') && frame % Math.max(3, fr) === 0) this.shoot();
+                    this.abilityCharge = Math.min(100, this.abilityCharge + (pKey === 'bob' ? 0.26 : 0.18));
+                    if(this.abilityActive > 0) this.abilityActive--;
+                    if(this.invuln > 0) this.invuln--;
+                    updateAbilityHud();
+                    updatePilotCommHud();
+                }
+                
+                ctx.save(); ctx.translate(this.x, this.y);
+                drawShip(ctx, pKey, PILOTS[pKey].color, this.r);
+                if(this.abilityActive > 0) {
+                    ctx.globalAlpha = 0.72;
+                    ctx.fillStyle = PILOTS[pKey].color;
+                    ctx.shadowColor = PILOTS[pKey].color;
+                    ctx.shadowBlur = 16;
+                    const pulse = 1 + Math.sin(frame / 3) * 0.18;
+                    ctx.fillRect(-this.r * 0.62, this.r * 1.22, this.r * 0.26, this.r * 1.15 * pulse);
+                    ctx.fillRect(this.r * 0.36, this.r * 1.22, this.r * 0.26, this.r * 1.15 * pulse);
+                    ctx.globalAlpha = 1;
+                }
+                ctx.restore();
+            }
+            shoot() {
+                let dmg = 20 * (mods.pierce ? 1.5 : 1);
+                let c = PILOTS[pKey].color;
+                
+                if (mods.laser && frame % 10 === 0) {
+                    const laserLevel = equippedRogue.emp_laser?.level || 1;
+                    entities.pjs.push(new Proj(this.x, this.y-this.r, {x:0, y:-34}, '#8ff7ff', dmg*(1.9 + laserLevel*0.35), 10 + laserLevel*2, true, true));
+                }
+                let count = 1 + mods.spread;
+                for(let i=0; i<count; i++) {
+                    let a = -Math.PI/2 + (count>1 ? ((i-(count-1)/2)*0.15) : 0);
+                    entities.pjs.push(new Proj(this.x, this.y-this.r, {x:Math.cos(a)*20, y:Math.sin(a)*20}, c, dmg, 4, mods.pierce, false));
+                }
+            }
+            addExp() {
+                this.exp++;
+                if(this.exp >= this.maxExp) {
+                    this.exp = 0; this.lvl++; this.maxExp += 5;
+                    triggerUpgrade();
+                }
+                document.getElementById('exp-bar').style.width = (this.exp/this.maxExp*100) + '%';
+            }
+            damage(amount) {
+                if(this.invuln > 0 || (this.abilityActive > 0 && pKey === 'alice')) return;
+                const finalDamage = Math.max(2, amount - mods.armor);
+                this.hp = Math.max(0, this.hp - finalDamage);
+                document.getElementById('hp-bar').style.width = (this.hp/this.maxHp*100) + '%';
+                document.getElementById('hp-bar').style.background = this.hp / this.maxHp < 0.3 ? '#f33' : '#0f0';
+                document.getElementById('comm-hp-bar').style.width = (this.hp/this.maxHp*100) + '%';
+                this.invuln = 35;
+                explode(this.x, this.y, '#f33');
+                if(this.hp <= 0) {
+                    if(chapter === 2) failChapterTwo();
+                    else endRun(false);
+                }
+            }
+            heal(amount) {
+                if(this.hp <= 0) return;
+                const before = this.hp;
+                this.hp = Math.min(this.maxHp, this.hp + amount);
+                const restored = this.hp - before;
+                if(restored <= 0) return;
+                updatePlayerHpHud();
+                showToast(`医疗晶体：装甲恢复 +${restored}`);
+                explode(this.x, this.y, '#55ff88');
+            }
+            useAbility() {
+                if((state !== 'PLAYING' && state !== 'CH02_PLAY') || this.abilityCharge < 100) return;
+                this.abilityCharge = 0;
+                if(pKey === 'alice') {
+                    this.abilityActive = 150; this.invuln = 150;
+                    showToast('红移冲刺：无视碰撞，穿越敌阵');
+                } else if(pKey === 'bob') {
+                    this.abilityActive = 120;
+                    const chapterTwoBossTarget = chapterTwoBoss && !chapterTwoBoss.defeated ? chapterTwoBoss : null;
+                    const targets = [...entities.ens, boss, chapterTwoBossTarget].filter(Boolean).slice(0, 12);
+                    targets.forEach(t => {
+                        entities.missiles.push(new HomingMissile(this.x, this.y, t, '#33ccff', 125));
+                        if(t && t !== boss && t !== chapterTwoBossTarget) t.v.y *= 0.45;
+                    });
+                    showToast(`天穹追踪协议：锁定 ${targets.length} 个目标，敌机减速`);
+                } else {
+                    this.abilityActive = 180; this.invuln = 110;
+                    for(let side of [-1, 1]) entities.pjs.push(new Proj(this.x + side*this.r, this.y, {x:side*5, y:-24}, '#33ff33', 90, 7, true, true));
+                    showToast('堡垒齐射：护盾展开');
+                }
+                updateAbilityHud();
+            }
+        }
+
+        class Proj {
+            constructor(x,y,v,c,dmg,r,p,isLaser=false){ this.x=x;this.y=y;this.v=v;this.c=c;this.dmg=dmg;this.r=r;this.p=p;this.isLaser=isLaser; this.hit=new Set();}
+            update(){ 
+                this.x+=this.v.x; this.y+=this.v.y; 
+                ctx.save(); ctx.fillStyle=this.c; ctx.shadowBlur=10; ctx.shadowColor=this.c;
+                if(this.isLaser) {
+                    if(isLoaded(SPRITES.fx && SPRITES.fx.laser)) {
+                        ctx.globalAlpha = 0.82;
+                        ctx.drawImage(SPRITES.fx.laser, this.x-this.r*2.2, this.y-210, this.r*4.4, 240);
+                        ctx.globalAlpha = 1;
+                    } else {
+                        ctx.globalAlpha = 0.25;
+                        ctx.fillRect(this.x-this.r*1.6, this.y-170, this.r*3.2, 190);
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(this.x-this.r*0.28, this.y-180, this.r*0.56, 205);
+                    }
+                    ctx.strokeStyle = this.c; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(this.x-this.r, this.y-175); ctx.lineTo(this.x+this.r, this.y-145); ctx.stroke();
+                }
+                else if(this.p) {
+                    ctx.fillStyle = '#fff7c2'; ctx.shadowColor = '#ffd45a'; ctx.shadowBlur = 18;
+                    ctx.fillRect(this.x - this.r * 0.42, this.y - this.r * 1.9, this.r * 0.84, this.r * 3.8);
+                    ctx.fillStyle = this.c; ctx.shadowBlur = 8;
+                    ctx.fillRect(this.x - this.r * 0.18, this.y - this.r * 1.55, this.r * 0.36, this.r * 3.1);
+                    ctx.fillStyle = '#fff'; ctx.fillRect(this.x - this.r * 0.11, this.y - this.r * 1.7, this.r * 0.22, this.r * 0.7);
+                } else { ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill(); }
+                ctx.restore();
+            }
+        }
+
+        class HomingMissile {
+            constructor(x, y, target, color, dmg) {
+                this.x = x; this.y = y; this.target = target; this.c = color; this.dmg = dmg; this.r = 6; this.life = 180;
+                this.v = {x: 0, y: -8};
+            }
+            update() {
+                this.life--;
+                if(this.target && this.target.hp > 0) {
+                    const dx = this.target.x - this.x, dy = this.target.y - this.y;
+                    const d = Math.max(1, Math.hypot(dx, dy));
+                    this.v.x = this.v.x * 0.86 + dx / d * 3.2;
+                    this.v.y = this.v.y * 0.86 + dy / d * 3.2;
+                }
+                this.x += this.v.x; this.y += this.v.y;
+                ctx.save(); ctx.fillStyle = this.c; ctx.shadowBlur = 16; ctx.shadowColor = this.c;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+            constructor(kind = 'scout', x = null) {
+                this.kind = kind;
+                this.type = chapter === 2
+                    ? (branch === 'protection' ? 'ch02_drone' : (branch === 'execute' ? 'ch02_interceptor' : 'rebel'))
+                    : 'rebel';
+                this.r = kind === 'elite' ? 30 : Math.random()*10+15;
+                this.x = Math.random()*(canvas.width-this.r*2)+this.r; this.y = -30;
+                if(x !== null) this.x = x;
+                this.hp = kind === 'elite' ? 460 : this.r*2.8; 
+                this.maxHp = this.hp;
+                this.damage = kind === 'elite' ? 18 : 10;
+                this.v = {x: (Math.random()-0.5)*(kind === 'elite' ? 0.8 : 1.4), y: kind === 'elite' ? 0.95 : Math.random()*1.1+1.25};
+                this.fireCd = 40 + Math.random()*40;
+                this.reentries = 0;
+                this.dead = false;
+            }
+            update(){ 
+                entities.asteroids.forEach(a => {
+                    const dx = this.x - a.x, dy = this.y - a.y;
+                    const d = Math.max(1, Math.hypot(dx, dy));
+                    const safe = this.r + a.r + 42;
+                    if(d < safe) {
+                        this.v.x += dx / d * 0.08;
+                        this.v.y += dy / d * 0.04;
+                    }
+                });
+                this.x+=this.v.x; this.y+=this.v.y; 
+                if(this.kind === 'elite') this.x += Math.sin(frame/35) * 1.2;
+                if(this.y > canvas.height + this.r) this.reenter();
+                if(this.x < this.r || this.x > canvas.width - this.r) this.v.x *= -1;
+                if(--this.fireCd <= 0) {
+                    this.fireCd = this.kind === 'elite' ? 55 : 95;
+                    entities.epjs.push(new EnemyBullet(this.x, this.y + this.r, this.kind === 'elite' ? 4 : 3));
+                }
+                ctx.save(); ctx.translate(this.x, this.y);
+                drawEnemy(ctx, this.type, this.r, this.kind);
+                if(this.kind === 'elite') {
+                    ctx.fillStyle = '#300'; ctx.fillRect(-this.r, this.r+8, this.r*2, 4);
+                    ctx.fillStyle = '#f60'; ctx.fillRect(-this.r, this.r+8, this.r*2*(this.hp/this.maxHp), 4);
+                }
+                ctx.restore();
+            }
+            reenter() {
+                this.reentries++;
+                this.y = -this.r - Math.random()*80;
+                this.x = Math.random()*(canvas.width-this.r*2)+this.r;
+                this.v.y = Math.min(this.v.y + 0.12, this.kind === 'elite' ? 1.35 : 2.25);
+                this.v.x = (Math.random()-0.5)*(this.kind === 'elite' ? 0.9 : 1.6);
+            }
+        }
+
+        class ConvoyHauler {
+            constructor() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height * 0.25;
+                this.r = 46;
+                this.maxHp = CHAPTER_TWO.convoyHp;
+                this.hp = this.maxHp;
+            }
+            damage(amount) {
+                this.hp = Math.max(0, this.hp - amount);
+                return this.hp <= 0;
+            }
+            update() {
+                const drift = Math.sin(frame / 90) * 0.35;
+                this.x = Math.max(this.r, Math.min(canvas.width - this.r, this.x + drift));
+                this.draw();
+            }
+            draw() {
+                const integrity = Math.max(0, this.hp / this.maxHp);
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const sprite = SPRITES.ch02 && SPRITES.ch02.convoy;
+                if(isLoaded(sprite)) {
+                    drawReadableSprite(ctx, sprite, -this.r * 1.6, -this.r, this.r * 3.2, this.r * 2);
+                } else {
+                    ctx.strokeStyle = '#80e6f5';
+                    ctx.fillStyle = 'rgba(12, 42, 50, 0.82)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-this.r, 12); ctx.lineTo(-this.r * 0.42, -this.r * 0.72);
+                    ctx.lineTo(this.r * 0.42, -this.r * 0.72); ctx.lineTo(this.r, 12);
+                    ctx.lineTo(this.r * 0.58, this.r * 0.55); ctx.lineTo(-this.r * 0.58, this.r * 0.55);
+                    ctx.closePath(); ctx.fill(); ctx.stroke();
+                }
+                ctx.fillStyle = '#13252b'; ctx.fillRect(-this.r, this.r + 12, this.r * 2, 5);
+                ctx.fillStyle = integrity > 0.45 ? '#80e6f5' : '#ff8a5c';
+                ctx.fillRect(-this.r, this.r + 12, this.r * 2 * integrity, 5);
+                ctx.restore();
+            }
+        }
+
+        class ScanBeacon {
+            constructor(x = Math.random() * (canvas.width - 100) + 50, y = canvas.height * (0.34 + Math.random() * 0.38)) {
+                this.x = x;
+                this.y = y;
+                this.r = 14;
+                this.collected = false;
+                this.pulse = Math.random() * Math.PI * 2;
+            }
+            update() {
+                this.pulse += 0.08;
+                this.draw();
+                if(player && !this.collected && Math.hypot(player.x - this.x, player.y - this.y) < player.r + Math.max(this.r, mods.magnet)) {
+                    this.collected = true;
+                    collectScan();
+                }
+            }
+            draw() {
+                const glow = 0.45 + Math.sin(this.pulse) * 0.2;
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const beaconSheet = SPRITES.ch02 && SPRITES.ch02.fx.beacon;
+                const sheet = SPRITES.ch02 && SPRITES.ch02.fx.scan;
+                const frameIndex = Math.floor(frame / 10) % 4;
+                if(isLoaded(beaconSheet)) {
+                    const frameWidth = beaconSheet.naturalWidth / 4;
+                    ctx.globalAlpha = 0.8 + glow * 0.2;
+                    ctx.drawImage(beaconSheet, frameIndex * frameWidth, 0, frameWidth, beaconSheet.naturalHeight, -this.r * 2.25, -this.r * 2.25, this.r * 4.5, this.r * 4.5);
+                }
+                if(isLoaded(sheet)) {
+                    const frameWidth = sheet.naturalWidth / 4;
+                    const frameIndex = Math.floor(frame / 10) % 4;
+                    ctx.globalAlpha = 0.72 + glow * 0.28;
+                    ctx.drawImage(sheet, frameIndex * frameWidth, 0, frameWidth, sheet.naturalHeight, -this.r * 3.2, -this.r * 3.2, this.r * 6.4, this.r * 6.4);
+                    ctx.restore();
+                    return;
+                }
+                ctx.strokeStyle = '#b8fff5';
+                ctx.fillStyle = `rgba(18, 210, 225, ${Math.min(0.9, glow + 0.2)})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(0, 0, this.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, 0, this.r * (1.45 + Math.sin(this.pulse) * 0.14), 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = '#e9f7fa'; ctx.fillRect(-2, -7, 4, 14);
+                ctx.restore();
+            }
+        }
+
+        function drawChapterTwoScanCorridor() {
+            if(state !== 'CH02_PLAY') return;
+            const left = 18, top = 86, width = canvas.width - 36, height = canvas.height * 0.62;
+            ctx.save();
+            ctx.fillStyle = 'rgba(16, 111, 126, 0.07)';
+            ctx.fillRect(left, top, width, height);
+            ctx.strokeStyle = 'rgba(128, 230, 245, 0.58)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([12, 10]);
+            ctx.strokeRect(left, top, width, height);
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#b8fff5';
+            ctx.font = '700 13px monospace';
+            ctx.fillText('B区扫描走廊 // SIGNAL LOCK', left + 12, top + 20);
+            ctx.restore();
+        }
+
+        function goldAsteroidChance() {
+            const blackboxLevel = equippedRogue.mix_blackbox?.level || 0;
+            return Math.min(0.3, 0.08 + blackboxLevel * 0.05);
+        }
+
+        class Asteroid {
+            constructor(isGold = false) {
+                this.isGold = isGold;
+                this.r = 26 + Math.random() * 34;
+                const fromSide = Math.random() < 0.35;
+                this.x = fromSide ? (Math.random() < 0.5 ? -this.r : canvas.width + this.r) : Math.random() * canvas.width;
+                this.y = fromSide ? Math.random() * canvas.height * 0.45 : -this.r;
+                const target = player ? { x: player.x + (Math.random()-0.5)*160, y: player.y + (Math.random()-0.5)*120 } : { x: canvas.width/2, y: canvas.height*0.72 };
+                const dx = target.x - this.x, dy = target.y - this.y;
+                const d = Math.max(1, Math.hypot(dx, dy));
+                const spd = 1.35 + Math.random() * 1.15;
+                this.v = { x: dx / d * spd, y: dy / d * spd };
+                this.rot = Math.random() * Math.PI * 2;
+                this.spin = (Math.random() - 0.5) * 0.035;
+                this.damage = isGold ? 14 : 18;
+                this.hp = this.r * (isGold ? 4.6 : 3.2);
+                this.maxHp = this.hp;
+                if(isGold) showToast('发现高密度矿脉，击碎它。');
+            }
+            update() {
+                this.x += this.v.x; this.y += this.v.y; this.rot += this.spin;
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+                const grd = ctx.createRadialGradient(-this.r*0.35, -this.r*0.45, this.r*0.1, 0, 0, this.r);
+                grd.addColorStop(0, this.isGold ? '#ffd76a' : '#8d8580');
+                grd.addColorStop(0.55, this.isGold ? '#8a6523' : '#4a4643');
+                grd.addColorStop(1, this.isGold ? '#2f2715' : '#1f2021');
+                ctx.fillStyle = grd;
+                ctx.strokeStyle = this.isGold ? '#ffe39a' : '#a49a92';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                for(let i=0;i<10;i++) {
+                    const a = i / 10 * Math.PI * 2;
+                    const rr = this.r * (0.78 + Math.sin(i*2.1 + this.r) * 0.12 + Math.random()*0.03);
+                    const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+                    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = this.isGold ? 'rgba(255,210,80,.28)' : 'rgba(0,0,0,.22)';
+                ctx.beginPath(); ctx.arc(this.r*0.18, this.r*0.1, this.r*0.18, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(-this.r*0.2, -this.r*0.1, this.r*0.13, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
+            get offscreen() {
+                return this.x < -this.r*2 || this.x > canvas.width + this.r*2 || this.y < -this.r*2 || this.y > canvas.height + this.r*2;
+            }
+        }
+
+        class RescuePod {
+            constructor() {
+                this.x = canvas.width * 0.5;
+                this.y = canvas.height * 0.27;
+                this.r = 48;
+                this.pulse = 0;
+            }
+            update() {
+                this.pulse += 0.06;
+                const spotlight = ctx.createRadialGradient(this.x, this.y, this.r * 0.6, this.x, this.y, canvas.width * 0.7);
+                spotlight.addColorStop(0, 'rgba(255, 218, 117, 0.18)');
+                spotlight.addColorStop(1, 'rgba(2, 8, 12, 0)');
+                ctx.fillStyle = spotlight;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const glow = 0.55 + Math.sin(this.pulse) * 0.15;
+                ctx.strokeStyle = `rgba(255, 213, 102, ${glow})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(0, 0, this.r + 10 + Math.sin(this.pulse) * 4, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = '#26353a'; ctx.strokeStyle = '#f2c45b'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.ellipse(0, 0, this.r * 1.15, this.r * 0.72, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#8de7ef'; ctx.beginPath(); ctx.ellipse(0, -4, this.r * 0.46, this.r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#ffdc70'; ctx.fillRect(-this.r * 0.72, -4, this.r * 0.18, 8); ctx.fillRect(this.r * 0.54, -4, this.r * 0.18, 8);
+                const beaconSprite = SPRITES.ch02 && SPRITES.ch02.fx && SPRITES.ch02.fx.beacon;
+                if(isLoaded(beaconSprite)) {
+                    ctx.globalAlpha = 0.62;
+                    ctx.drawImage(beaconSprite, -this.r * 0.72, -this.r * 0.28, this.r * 1.44, this.r * 0.56);
+                    ctx.globalAlpha = 1;
+                }
+                ctx.fillStyle = '#fff4b0'; ctx.font = '700 12px monospace'; ctx.fillText('RESCUE SIGNAL', -48, this.r + 28);
+                ctx.restore();
+            }
+        }
+
+        function killEnemy(e) {
+            if(e.dead) return;
+            e.dead = true;
+            enemiesDestroyed++;
+            explode(e.x, e.y, e.type==='empire'?'#fff':'#f60');
+            if(e.kind === 'elite' && equippedRogue.def_medkit && Math.random() < 0.35) {
+                entities.heals.push(new HealPickup(e.x, e.y));
+            }
+            if(chapter === 1) {
+                maybeDrop(e.x, e.y, e.kind === 'elite');
+                maybeCombatBark(e.kind);
+            }
+        }
+
+        function maybeCombatBark(kind) {
+            if(combatBarkCooldown > 0 || state !== 'PLAYING') return;
+            if(kind !== 'elite' && Math.random() > 0.28) return;
+            const lines = {
+                alice: kind === 'elite'
+                    ? ['重型目标解体。它的外壳像临时焊上去的。', '击穿了，但这些东西不像正规军。']
+                    : ['让开。', '下一架。', '火线清出来了。'],
+                bob: kind === 'elite'
+                    ? ['目标结构不符合军规，疑似民用舰体改装。', '残骸读数异常，记录进黑匣。']
+                    : ['命中确认。', '威胁下降。', '弹道校正完成。'],
+                charlie: kind === 'elite'
+                    ? ['这不是战舰工艺，是求生的人拼出来的。', '别高兴太早，里面可能还有人。']
+                    : ['别挡航线。', '我看见碎片了，继续推进。', '短点射，省弹。']
+            };
+            const pool = lines[pKey] || lines.alice;
+            showDialogue('PLAYER', pool[Math.floor(Math.random()*pool.length)]);
+            combatBarkCooldown = kind === 'elite' ? 260 : 180;
+        }
+
+        function projectileHits(pj, target) {
+            if(pj.isLaser) {
+                return Math.abs(pj.x - target.x) < target.r + pj.r * 1.3 &&
+                    target.y > pj.y - 190 && target.y < pj.y + 35;
+            }
+            return Math.hypot(pj.x-target.x, pj.y-target.y) < target.r+pj.r;
+        }
+
+        class EnemyBullet {
+            constructor(x, y, speed = 3) { this.x=x; this.y=y; this.r=5; this.v={x:(Math.random()-0.5)*1.6, y:speed}; this.dmg=10; }
+            update() {
+                this.x += this.v.x; this.y += this.v.y;
+                ctx.save(); ctx.fillStyle='#ff6a32'; ctx.shadowBlur=10; ctx.shadowColor='#ff6a32';
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); ctx.restore();
+            }
+        }
+
+        class ChapterTwoBossTarget {
+            constructor(owner, label, xOffset, yOffset, hp, color) {
+                this.owner = owner; this.label = label; this.xOffset = xOffset; this.yOffset = yOffset;
+                this.hp = hp; this.maxHp = hp; this.r = 19; this.color = color; this.active = true;
+                this.x = owner.x + xOffset; this.y = owner.y + yOffset;
+            }
+            update() {
+                this.x = this.owner.x + this.xOffset;
+                this.y = this.owner.y + this.yOffset;
+            }
+            damage(amount) {
+                if(!this.active) return false;
+                this.hp = Math.max(0, this.hp - amount);
+                if(this.hp === 0) this.active = false;
+                return true;
+            }
+            draw() {
+                if(!this.active) return;
+                ctx.save(); ctx.translate(this.x, this.y);
+                ctx.fillStyle = '#14171b'; ctx.strokeStyle = this.color; ctx.lineWidth = 2;
+                ctx.shadowColor = this.color; ctx.shadowBlur = 12;
+                ctx.beginPath(); ctx.arc(0, 0, this.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(0, 0, 7 + Math.sin(frame / 7) * 2, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class ChapterTwoBossPickup {
+            constructor(x, y, type, color) {
+                this.x = x; this.y = y; this.type = type; this.color = color; this.r = 14; this.life = 900; this.claimed = false;
+            }
+            update() {
+                this.life--;
+                this.y += Math.sin(frame / 18) * 0.3;
+                if(player && Math.hypot(player.x - this.x, player.y - this.y) < player.r + this.r) this.claim();
+                return this.life > 0 && !this.claimed;
+            }
+            claim() {
+                if(this.claimed) return;
+                this.claimed = true;
+                if(this.type === 'overcharge') chapterTwoBossBuff.overcharge = 540;
+                if(this.type === 'intercept') chapterTwoBossBuff.interceptReady = true;
+                showToast(this.type === 'overcharge' ? 'TEMP OVERCHARGE READY' : 'INTERCEPT CLEAR READY');
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(frame / 35);
+                ctx.strokeStyle = this.color; ctx.fillStyle = 'rgba(10,13,16,.8)'; ctx.lineWidth = 2;
+                ctx.shadowColor = this.color; ctx.shadowBlur = 14;
+                ctx.beginPath(); ctx.rect(-this.r, -this.r, this.r * 2, this.r * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = this.color; ctx.fillRect(-4, -8, 8, 16);
+                ctx.restore();
+            }
+        }
+
+        class ChapterTwoBranchBoss {
+            constructor(config) {
+                this.config = config; this.x = canvas.width / 2; this.y = -150; this.r = 96;
+                this.hp = config.hp; this.maxHp = config.hp; this.phase = 1; this.fireCd = 90; this.pattern = 0;
+                this.defeated = false; this.introShown = false; this.phaseTwoShown = false;
+                this.targets = []; this.pickups = []; this.objective = ''; this.initializedPhases = new Set(); this.syncPhase();
+            }
+            update() {
+                if(this.defeated) return;
+                this.x += (canvas.width / 2 + Math.sin(frame / 84) * 140 - this.x) * 0.028;
+                this.y += (145 - this.y) * 0.035;
+                this.targets.forEach(target => target.update());
+                this.pickups = this.pickups.filter(pickup => { const alive = pickup.update(); if(alive) pickup.draw(); return alive; });
+                if(!this.introShown) { this.introShown = true; showDialogueId(this.config.dialogueRoot + '.intro'); }
+                if(--this.fireCd <= 0) { this.fireCd = Math.max(42, 98 - this.phase * 13); this.firePattern(); }
+                if(chapterTwoBossBuff.overcharge > 0) chapterTwoBossBuff.overcharge--;
+                this.draw();
+            }
+            syncPhase() {
+                const hpPct = this.hp / this.maxHp;
+                const next = hpPct <= 0.33 ? 3 : hpPct <= 0.66 ? 2 : 1;
+                this.phase = next;
+                if(this.initializedPhases.has(next)) return;
+                this.initializedPhases.add(next);
+                this.targets = this.config.makeTargets(this, next);
+                this.objective = this.config.objectives[next - 1];
+                if(next === 2 && !this.phaseTwoShown) {
+                    this.phaseTwoShown = true;
+                    this.pickups.push(new ChapterTwoBossPickup(this.x, this.y + this.r + 36, this.config.pickupType, this.config.color));
+                    showDialogueId(this.config.dialogueRoot + '.phase2');
+                }
+            }
+            damage(projectile) {
+                if(this.defeated || !projectile) return false;
+                const damage = Math.max(1, projectile.dmg || 1) * chapterTwoPlayerDamageMultiplier();
+                const target = this.targets.find(node => node.active && projectileHits(projectile, node));
+                if(target) {
+                    target.damage(damage);
+                    explode(projectile.x, projectile.y, target.color);
+                    return true;
+                }
+                if(this.targets.some(node => node.active)) return false;
+                if(!projectileHits(projectile, this)) return false;
+                this.hp = Math.max(0, this.hp - damage);
+                explode(projectile.x, projectile.y, this.config.color);
+                this.syncPhase();
+                if(this.hp === 0) this.defeated = true;
+                return true;
+            }
+            firePattern() {
+                this.pattern = (this.pattern + 1) % 2;
+                const originY = this.y + this.r * 0.5;
+                if(this.pattern === 0) {
+                    const aim = Math.atan2((player ? player.y : canvas.height * 0.75) - originY, (player ? player.x : this.x) - this.x);
+                    const count = this.phase + 1;
+                    for(let i = 0; i < count; i++) {
+                        const angle = aim + (i - (count - 1) / 2) * 0.16;
+                        const bullet = new EnemyBullet(this.x, originY, 3);
+                        bullet.v.x = Math.cos(angle) * (2.3 + this.phase * 0.25); bullet.v.y = Math.sin(angle) * (2.3 + this.phase * 0.25);
+                        bullet.dmg = 9 + this.phase * 2; entities.epjs.push(bullet);
+                    }
+                } else {
+                    const lanes = 6 + this.phase;
+                    for(let i = 0; i < lanes; i++) {
+                        if(i === Math.floor(frame / 70) % lanes) continue;
+                        const bullet = new EnemyBullet(canvas.width * (i + .5) / lanes, originY, 2.5 + this.phase * .2);
+                        bullet.v.x = 0; bullet.dmg = 8 + this.phase * 2; entities.epjs.push(bullet);
+                    }
+                }
+            }
+            drawTethers(color, count) {
+                if(!convoy) return;
+                ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.shadowColor = color; ctx.shadowBlur = 12;
+                for(let i = 0; i < count; i++) {
+                    const fromX = this.x + (i - (count - 1) / 2) * 44;
+                    ctx.beginPath(); ctx.moveTo(fromX, this.y + this.r * .35);
+                    ctx.quadraticCurveTo((fromX + convoy.x) / 2, convoy.y - 95 + Math.sin(frame / 11 + i) * 12, convoy.x, convoy.y - convoy.r * .35);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        class PurifierBoss extends ChapterTwoBranchBoss {
+            constructor() {
+                super({ hp: 12000, color: '#ff304f', pickupType: 'overcharge', dialogueRoot: 'ch02.rebel_boss',
+                    objectives: ['DESTROY 3 LOCK NODES', 'DISABLE GUN BATTERIES // CLAIM OVERCHARGE', 'EXPOSED CORE // BREAK FINAL LOCK'],
+                    makeTargets: (boss, phase) => phase === 1
+                        ? [-58, 0, 58].map((offset, i) => new ChapterTwoBossTarget(boss, 'Lock Node ' + (i + 1), offset, 18, 550, '#ff304f'))
+                        : phase === 2 ? [-54, 0, 54].map((offset, i) => new ChapterTwoBossTarget(boss, 'Gun Battery ' + (i + 1), offset, 38, 700, '#fff2ee'))
+                        : [new ChapterTwoBossTarget(boss, 'Final Lock Core', 0, 20, 1200, '#ffffff')] });
+            }
+            draw() {
+                this.drawTethers('#ff304f', this.phase === 3 ? 1 : 3);
+                if(drawChapterTwoBossSprite('purifier', this.x, this.y, 270, 150)) {
+                    this.targets.forEach(target => target.draw());
+                    return;
+                }
+                ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#45111c'; ctx.strokeStyle = '#fff2ee'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(-112, -22); ctx.lineTo(-48, -72); ctx.lineTo(72, -55); ctx.lineTo(118, 8); ctx.lineTo(66, 72); ctx.lineTo(-88, 54); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#ff304f'; ctx.fillRect(-70, -16, 140, 18); ctx.fillStyle = '#ffffff'; ctx.fillRect(-24, 12, 48, 24); ctx.restore();
+                this.targets.forEach(target => target.draw());
+            }
+        }
+
+        class RunnerBoss extends ChapterTwoBranchBoss {
+            constructor() {
+                super({ hp: 11000, color: '#f17a32', pickupType: 'intercept', dialogueRoot: 'ch02.empire_boss',
+                    objectives: ['CUT 3 GRAPPLE ANCHORS', 'DISABLE BOARDING BATTERIES // CLAIM INTERCEPT', 'DESTROY ENGINE CORE'],
+                    makeTargets: (boss, phase) => phase === 1
+                        ? [-62, 0, 62].map((offset, i) => new ChapterTwoBossTarget(boss, 'Grapple Anchor ' + (i + 1), offset, 22, 500, '#f17a32'))
+                        : phase === 2 ? [-48, 48].map((offset, i) => new ChapterTwoBossTarget(boss, 'Boarding Battery ' + (i + 1), offset, 40, 780, '#ffbf72'))
+                        : [new ChapterTwoBossTarget(boss, 'Engine Core', 0, 22, 1300, '#fff0d5')] });
+            }
+            draw() {
+                this.drawTethers('#f17a32', this.phase === 3 ? 1 : 2);
+                if(drawChapterTwoBossSprite('runner', this.x, this.y, 250, 145)) {
+                    this.targets.forEach(target => target.draw());
+                    return;
+                }
+                ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#502719'; ctx.strokeStyle = '#ffbf72'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(-118, 5); ctx.lineTo(-54, -64); ctx.lineTo(84, -48); ctx.lineTo(120, 18); ctx.lineTo(38, 76); ctx.lineTo(-94, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#f17a32'; ctx.fillRect(-78, -10, 154, 16); ctx.fillStyle = '#ffbf72'; ctx.fillRect(-18, 15, 36, 29); ctx.restore();
+                this.targets.forEach(target => target.draw());
+            }
+        }
+
+        // Integration surface for the later branch-flow task. These functions are inert until that task calls them.
+        function startChapterTwoBoss(selectedBranch) {
+            const resolvedBranch = selectedBranch === 'protection' ? 'protection' : 'execute';
+            chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
+            chapterTwoBoss = resolvedBranch === 'protection' ? new PurifierBoss() : new RunnerBoss();
+            updateChapterTwoBossObjectives();
+            return chapterTwoBoss;
+        }
+
+        function startChapterTwoVictory() {
+            if(!chapterTwoBoss || !branch || chapterTwoVictory) return;
+            const bossSnapshot = { x: chapterTwoBoss.x, y: chapterTwoBoss.y, r: chapterTwoBoss.r, color: chapterTwoBoss.config.color };
+            chapterTwoBoss = null;
+            entities.ens = [];
+            entities.epjs = [];
+            chapterTwoVictory = { branch, frame: 0, boss: bossSnapshot, signal: 1 };
+            state = 'CH02_VICTORY';
+            showDialogueId(branch === 'protection' ? 'ch02.rebel_boss.defeat' : 'ch02.empire_boss.defeat');
+        }
+
+        function updateChapterTwoVictory() {
+            if(!chapterTwoVictory) return;
+            const victory = chapterTwoVictory;
+            victory.frame++;
+            const t = Math.min(1, victory.frame / 150);
+            const boss = victory.boss;
+            ctx.save();
+            if(victory.branch === 'protection') {
+                const beamAlpha = Math.max(0, 1 - t * 1.6);
+                ctx.strokeStyle = `rgba(255, 48, 79, ${beamAlpha})`;
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#ff304f'; ctx.shadowBlur = 16;
+                ctx.beginPath(); ctx.moveTo(boss.x - 32, boss.y + boss.r * .3); ctx.lineTo(convoy.x - 18, convoy.y - 42); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(boss.x + 32, boss.y + boss.r * .3); ctx.lineTo(convoy.x + 18, convoy.y - 42); ctx.stroke();
+                if(victory.frame < 55) {
+                    ctx.strokeStyle = '#fff2ee'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(convoy.x - 24, convoy.y - 50); ctx.lineTo(convoy.x + 24, convoy.y - 22); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(convoy.x + 24, convoy.y - 50); ctx.lineTo(convoy.x - 24, convoy.y - 22); ctx.stroke();
+                }
+                convoy.y -= 3.7;
+                convoy.x += Math.sin(victory.frame / 12) * .45;
+                convoy.draw();
+                ctx.fillStyle = 'rgba(128, 230, 245, .8)';
+                ctx.fillRect(convoy.x - 5, convoy.y + convoy.r * .75, 10, 34);
+            } else {
+                victory.signal = Math.max(0, 1 - t * 1.25);
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, 1 - t * .7);
+                if(!drawChapterTwoBossSprite('runner', boss.x, boss.y + victory.frame * 3.1, 250, 145)) {
+                    ctx.translate(boss.x, boss.y + victory.frame * 3.1);
+                    ctx.fillStyle = '#502719'; ctx.strokeStyle = '#ffbf72'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(-118, 5); ctx.lineTo(-54, -64); ctx.lineTo(84, -48); ctx.lineTo(120, 18); ctx.lineTo(38, 76); ctx.lineTo(-94, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
+                }
+                ctx.restore();
+                convoy.draw();
+                ctx.strokeStyle = `rgba(128, 230, 245, ${victory.signal})`; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(convoy.x, convoy.y, convoy.r + 18 + Math.sin(victory.frame / 7) * 5, 0, Math.PI * 2); ctx.stroke();
+            }
+            ctx.restore();
+            if(victory.frame >= 150) showChapterTwoOutro();
+        }
+
+        function updateChapterTwoBoss() {
+            if(!chapterTwoBoss || chapterTwoBoss.defeated) return;
+            chapterTwoBoss.update();
+            updateChapterTwoBossObjectives();
+        }
+
+        function damageChapterTwoBoss(projectile) {
+            if(!chapterTwoBoss) return false;
+            const hit = chapterTwoBoss.damage(projectile);
+            if(hit) updateChapterTwoBossObjectives();
+            return hit;
+        }
+
+        function isChapterTwoBossDefeated() { return !!chapterTwoBoss && chapterTwoBoss.defeated; }
+
+        function chapterTwoPlayerDamageMultiplier() {
+            return chapter === 2 && chapterTwoBossBuff.overcharge > 0 ? 2 : 1;
+        }
+
+        function useChapterTwoIntercept() {
+            if(state !== 'CH02_PLAY' || !chapterTwoBossBuff.interceptReady) return false;
+            const cleared = entities.epjs.length;
+            chapterTwoBossBuff.interceptReady = false;
+            entities.epjs = [];
+            if(player) explode(player.x, player.y, '#ffbf72');
+            showToast(`INTERCEPT CLEAR // ${cleared} HOSTILE ROUNDS REMOVED`);
+            updateAbilityHud();
+            updatePilotCommHud();
+            return true;
+        }
+
+        function updateChapterTwoBossObjectives() {
+            if(!chapterTwoBoss) return;
+            const remaining = chapterTwoBoss.targets.filter(target => target.active).length;
+            setMission(CHAPTER_TWO, `BOSS P${chapterTwoBoss.phase} // ${chapterTwoBoss.objective} // TARGETS ${remaining}`);
+            document.getElementById('comm-text').innerText = `分支交战目标：${chapterTwoBoss.objective}`;
+        }
+
+        class Boss {
+            constructor() {
+                this.x = canvas.width/2; this.y = -140; this.r = 110; this.hp = 32000; this.maxHp = 32000;
+                this.phase = 1; this.fireCd = 95; this.weakOpen = 0; this.damage = 22; this.pattern = 0; this.protectTimer = 180; this.maneuverTimer = 120;
+            }
+            update() {
+                const guardX = canvas.width * 0.5 + Math.sin(frame / 90) * (90 + this.phase * 24);
+                this.x += (guardX - this.x) * (0.012 + this.phase * 0.002);
+                this.y += (120 - this.y) * 0.025;
+                this.protectTimer--;
+                if(this.protectTimer <= 0) {
+                    this.protectTimer = 260;
+                    showDialogue('REBEL_COMMANDER', bossProtectLine());
+                    this.guardBurst();
+                }
+                this.maneuverTimer--;
+                if(this.maneuverTimer <= 0) {
+                    this.maneuverTimer = Math.max(95, 160 - this.phase * 18);
+                    this.guardBurst();
+                }
+                const hpPct = this.hp / this.maxHp;
+                const nextPhase = hpPct < 0.34 ? 3 : hpPct < 0.67 ? 2 : 1;
+                if(nextPhase !== this.phase) {
+                    this.phase = nextPhase;
+                    this.weakOpen = 240;
+                    showToast(`缝合航母弱点暴露 // PHASE ${this.phase}`);
+                    forceBossPhaseDialogue(this.phase);
+                }
+                if(--this.fireCd <= 0) {
+                    this.fireCd = Math.max(58, 112 - this.phase * 14);
+                    this.firePattern();
+                }
+                if(this.weakOpen > 0) this.weakOpen--;
+                this.draw();
+                updateBossHud();
+            }
+            firePattern() {
+                this.pattern = (this.pattern + 1) % 3;
+                if(this.pattern === 0) {
+                    // Slow aimed shots, teaches movement without filling the screen.
+                    const dx = player.x - this.x, dy = player.y - this.y;
+                    const base = Math.atan2(dy, dx);
+                    const count = this.phase === 1 ? 2 : 3;
+                    for(let i=0;i<count;i++) {
+                        const a = base + (i-(count-1)/2) * 0.18;
+                        const b = new EnemyBullet(this.x, this.y + this.r*0.4, 2.2 + this.phase*0.25);
+                        b.v.x = Math.cos(a) * (1.7 + this.phase*0.2);
+                        b.v.y = Math.sin(a) * (1.7 + this.phase*0.2);
+                        entities.epjs.push(b);
+                    }
+                } else if(this.pattern === 1) {
+                    // Lane curtain with deliberate gaps.
+                    const lanes = this.phase === 1 ? 6 : 7;
+                    const gap = Math.floor((frame / 80) % lanes);
+                    for(let i=0;i<lanes;i++) {
+                        if(i === gap || i === gap + 1) continue;
+                        const x = canvas.width * (i + 0.5) / lanes;
+                        const b = new EnemyBullet(x, this.y + this.r*0.25, 2.0 + this.phase*0.18);
+                        b.v.x = Math.sin(frame/45 + i) * 0.25;
+                        b.v.y = 2.0 + this.phase*0.18;
+                        entities.epjs.push(b);
+                    }
+                } else {
+                    // Reduced scatter, used sparingly as the pressure spike.
+                    const count = 3 + this.phase;
+                    for(let i=0;i<count;i++) {
+                        const a = Math.PI/2 + (i-(count-1)/2) * 0.18;
+                        const b = new EnemyBullet(this.x + (Math.random()-0.5)*this.r*0.7, this.y + this.r*0.5, 2.0 + this.phase*0.22);
+                        b.v.x = Math.cos(a) * (0.9 + this.phase*0.16);
+                        b.v.y = Math.sin(a) * (1.8 + this.phase*0.22);
+                        entities.epjs.push(b);
+                    }
+                }
+            }
+            guardBurst() {
+                const count = 2 + this.phase;
+                for(let i=0;i<count;i++) {
+                    const a = -Math.PI * 0.75 + i * (Math.PI * 0.5 / Math.max(1, count-1));
+                    const b = new EnemyBullet(this.x + (i-(count-1)/2)*34, this.y + this.r*0.55, 2.0 + this.phase*0.18);
+                    b.v.x = Math.cos(a) * 1.2;
+                    b.v.y = Math.abs(Math.sin(a)) * (1.6 + this.phase*0.18);
+                    entities.epjs.push(b);
+                }
+                if(this.phase >= 2 && Math.random() < 0.55) entities.asteroids.push(new Asteroid(false));
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y);
+                this.drawEscapePods();
+                const sprite = SPRITES.bosses && SPRITES.bosses[this.phase];
+                if(isLoaded(sprite)) {
+                    const drawW = this.r * 5.0;
+                    const drawH = drawW * 0.5;
+                    drawSolidBossSprite(ctx, sprite, -drawW/2, -drawH/2, drawW, drawH);
+                    if(this.weakOpen > 0) {
+                        ctx.fillStyle = '#fff18a';
+                        ctx.shadowColor = '#fff18a';
+                        ctx.shadowBlur = 18;
+                        ctx.beginPath(); ctx.arc(0, 8, 14 + Math.sin(frame/5)*3, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.restore();
+                    return;
+                }
+                ctx.shadowBlur = 18; ctx.shadowColor = '#ff4d21';
+                ctx.fillStyle = '#2b211c'; ctx.strokeStyle = '#8b4a2d'; ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-110, -20); ctx.lineTo(-60, -70); ctx.lineTo(18, -55); ctx.lineTo(112, -15);
+                ctx.lineTo(86, 58); ctx.lineTo(20, 80); ctx.lineTo(-92, 45); ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#151515'; ctx.fillRect(-74, -12, 48, 28); ctx.fillRect(34, -2, 55, 22);
+                ctx.strokeStyle = '#5de5ff'; ctx.globalAlpha = 0.65;
+                for(let i=0;i<4;i++) { ctx.beginPath(); ctx.arc(-75+i*45, 34+Math.sin(frame/20+i)*4, 12, 0, Math.PI*2); ctx.stroke(); }
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = this.weakOpen > 0 ? '#fff18a' : '#5b1710';
+                ctx.shadowColor = this.weakOpen > 0 ? '#fff18a' : '#ff2c16';
+                ctx.beginPath(); ctx.arc(0, 8, this.weakOpen > 0 ? 20 + Math.sin(frame/5)*3 : 13, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
+            drawEscapePods() {
+                ctx.save();
+                ctx.globalAlpha = 0.88;
+                for(let i=0;i<4;i++) {
+                    const px = -120 + i * 80 + Math.sin(frame/45+i)*4;
+                    const py = 108 + Math.cos(frame/50+i)*3;
+                    ctx.fillStyle = '#1e3137';
+                    ctx.strokeStyle = '#80e6f5';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, 16, 9, 0, 0, Math.PI*2);
+                    ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#ffd36a';
+                    ctx.fillRect(px-5, py-2, 10, 3);
+                }
+                ctx.strokeStyle = 'rgba(128,230,245,.34)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-165, 86); ctx.quadraticCurveTo(0, 50 + Math.sin(frame/20)*8, 165, 86);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        class BossCrash {
+            constructor(source) {
+                this.x = source.x;
+                this.y = source.y;
+                this.r = source.r;
+                this.phase = source.phase;
+                this.t = 0;
+                this.sprite = SPRITES.bosses && SPRITES.bosses[source.phase];
+            }
+            update() {
+                this.t++;
+                this.y += 1.9 + this.t * 0.015;
+                this.x += Math.sin(this.t / 8) * 2.2;
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(Math.sin(this.t / 18) * 0.08);
+                ctx.globalAlpha = Math.max(0, 1 - this.t / 190);
+                if(isLoaded(this.sprite)) {
+                    const drawW = this.r * 5.0;
+                    ctx.filter = `brightness(${Math.max(0.35, 1 - this.t / 260)})`;
+                    ctx.drawImage(this.sprite, -drawW/2, -drawW*0.25, drawW, drawW*0.5);
+                    ctx.filter = 'none';
+                }
+                ctx.restore();
+                if(this.t % 10 === 0) explode(this.x + (Math.random()-0.5)*220, this.y + (Math.random()-0.5)*80, '#ff7a2c');
+                if(this.t === 30) showDialogue('SYSTEM', '目标动力炉断连。残骸正在偏离逃生舱航线。');
+                return this.t > 190;
+            }
+        }
+
+        class Gem {
+            constructor(x,y){ this.x=x; this.y=y; this.vy=2; this.rot=0;}
+            update(){ 
+                this.y+=this.vy; this.rot+=0.1;
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+                ctx.fillStyle='#0ff'; ctx.shadowBlur=10; ctx.shadowColor='#0ff';
+                ctx.fillRect(-6,-6,12,12); ctx.restore(); 
+            }
+        }
+
+        class HealPickup {
+            constructor(x,y){ this.x=x; this.y=y; this.vy=1.5; this.rot=0; this.life=600; this.collected=false; }
+            update(){
+                this.y += this.vy; this.rot += 0.08; this.life--;
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+                ctx.fillStyle='#4dff8a'; ctx.shadowBlur=18; ctx.shadowColor='#4dff8a';
+                ctx.fillRect(-10,-10,20,20); ctx.fillStyle='#082b1a'; ctx.fillRect(-3,-8,6,16); ctx.fillRect(-8,-3,16,6);
+                ctx.restore();
+                return this.life > 0 && this.y < canvas.height + 60;
+            }
+        }
+
+        function updatePlayerHpHud() {
+            if(!player) return;
+            const ratio = player.hp / player.maxHp;
+            document.getElementById('hp-bar').style.width = (ratio * 100) + '%';
+            document.getElementById('hp-bar').style.background = ratio < 0.3 ? '#f33' : '#0f0';
+            document.getElementById('comm-hp-bar').style.width = (ratio * 100) + '%';
+        }
+
+        class Particle {
+            constructor(x,y,c){ this.x=x;this.y=y;this.v={x:(Math.random()-0.5)*8,y:(Math.random()-0.5)*8}; this.c=c; this.a=1; }
+            update(){ this.x+=this.v.x; this.y+=this.v.y; this.v.x*=0.95; this.v.y*=0.95; this.a-=0.03;
+                ctx.globalAlpha=Math.max(0,this.a); ctx.fillStyle=this.c; ctx.fillRect(this.x,this.y,4,4); ctx.globalAlpha=1; }
+        }
+
+        function explode(x, y, color) {
+            for(let i=0;i<15;i++) entities.particles.push(new Particle(x,y,color));
+        }
+
+        function showToast(text) {
+            const el = document.getElementById('toast');
+            el.innerText = text; el.classList.add('show');
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => el.classList.remove('show'), 1800);
+        }
+
+        function showPierceFeedback(projectile) {
+            if(!projectile.p || pierceFeedbackCooldown > 0) return;
+            pierceFeedbackCooldown = 28;
+            showToast('穿甲命中 // ARMOR PIERCED');
+        }
+
+        function showDialogue(name, text) {
+            const box = document.getElementById('dialogue-box');
+            const avatar = document.getElementById('dialogue-avatar');
+            document.getElementById('dialogue-name').innerText = name;
+            const localizedName = name === 'REBEL_COMMANDER' ? '叛军指挥官' : (name === 'SYSTEM' ? '指挥频道' : (name === 'PLAYER' ? PILOTS[pKey].name : name));
+            document.getElementById('dialogue-name').innerText = localizedName;
+            const portraitKey = name === 'REBEL_COMMANDER' ? 'rebel' : (name === 'SYSTEM' ? 'command' : pKey);
+            const portrait = portraitKey && SPRITES.portraits && SPRITES.portraits[portraitKey];
+            const commAvatar = document.getElementById('comm-avatar');
+            const commSpeaker = document.getElementById('comm-speaker');
+            document.getElementById('comm-text').innerText = text;
+            commSpeaker.innerText = name === 'REBEL_COMMANDER' ? '未授权频道' : (name === 'SYSTEM' ? '指挥频道' : PILOTS[pKey].name);
+            if(isLoaded(portrait)) {
+                avatar.innerText = '';
+                avatar.style.backgroundImage = `url(${portrait.src})`;
+                avatar.style.backgroundSize = 'cover';
+                avatar.style.backgroundPosition = 'center';
+                commAvatar.innerText = '';
+                commAvatar.style.backgroundImage = `url(${portrait.src})`;
+            } else {
+                avatar.style.backgroundImage = '';
+                avatar.innerText = name === 'REBEL_COMMANDER' ? 'REBEL' : 'SYS';
+                commAvatar.style.backgroundImage = '';
+                commAvatar.innerText = name === 'REBEL_COMMANDER' ? 'REBEL' : 'SYS';
+            }
+            document.getElementById('dialogue-text').innerText = text;
+            box.classList.add('show');
+            clearTimeout(box._timer);
+            box._timer = setTimeout(() => box.classList.remove('show'), 5200);
+        }
+
+        function bossProtectLine() {
+            const lines = {
+                alice: '红刃，别把速度浪费在追杀上。你应该看得见，逃生舱在我后面。',
+                bob: '神经机，重新算一遍轨迹。我的炮口在拦你，舰身在拦碎石。',
+                charlie: '老兵，你知道救援舰会怎么摆航线。我还在照那个规矩飞。'
+            };
+            return lines[pKey] || '后面的救生舱还活着。你要打，就先打穿我。';
+        }
+
+        function bossPhaseExchange(phase) {
+            const lines = {
+                alice: {
+                    boss: phase === 2 ? '你飞得很快，爱丽斯。那就绕过去看看，看看我身后是不是目标。' : '核心舱快撑不住了。你要证明自己不是刽子手，就别让碎片砸到他们。',
+                    pilot: phase === 2 ? '我看见了。指挥频道没有提逃生舱，一个字都没有。' : '我会开火，但我会把航线让出来。别逼我再猜一次。'
+                },
+                bob: {
+                    boss: phase === 2 ? '鲍勃，你的算法应该讨厌谎言。把战报和我的航迹叠在一起。' : '核心读数给你。判断吧，我是在攻击平民，还是在替他们挡死路。',
+                    pilot: phase === 2 ? '航迹冲突成立。统帅部简报缺失关键变量。' : '记录锁定。现在目标从歼灭改为避免二次伤害。'
+                },
+                charlie: {
+                    boss: phase === 2 ? '查理，你见过救援舰。你知道这副骨架不是为战斗生的。' : '老兵，最后一段航线交给你。别让孩子们死在我残骸下面。',
+                    pilot: phase === 2 ? '我认得。那不是军舰龙骨，是民用救援脊梁。' : '收到。我会把你打下来，也会把他们带出去。'
+                }
+            };
+            return lines[pKey] || lines.alice;
+        }
+
+        function forceBossPhaseDialogue(phase) {
+            if(bossDialogueLock) return;
+            bossDialogueLock = true;
+            const exchange = bossPhaseExchange(phase);
+            showDialogue('REBEL_COMMANDER', exchange.boss);
+            setTimeout(() => {
+                showDialogue('PLAYER', exchange.pilot);
+                setTimeout(() => { bossDialogueLock = false; }, 1200);
+            }, 1500);
+        }
+
+        function showTransition(title, text, duration = 900, onDone = null) {
+            const screen = document.getElementById('transition-screen');
+            document.getElementById('transition-title').innerText = title;
+            document.getElementById('transition-text').innerText = text;
+            screen.classList.add('show');
+            setTimeout(() => {
+                screen.classList.remove('show');
+                if(onDone) onDone();
+            }, duration);
+        }
+
+        function updateAbilityHud() {
+            if(!player) return;
+            const ready = player.abilityCharge >= 100;
+            const abilityPill = document.getElementById('ability-pill');
+            const bossBonus = chapterTwoBossBuff.overcharge > 0
+                ? ` // OVERCHARGE x2 ${Math.ceil(chapterTwoBossBuff.overcharge / 60)}s`
+                : (chapterTwoBossBuff.interceptReady ? ' // INTERCEPT READY' : '');
+            document.getElementById('ability-pill').innerText = `${PILOTS[pKey].ability}：${ready ? '就绪' : Math.floor(player.abilityCharge) + '%'} // 空格/双击触发`;
+            abilityPill.innerText += bossBonus;
+            abilityPill.style.color = chapterTwoBossBuff.overcharge > 0 ? '#ff8fa1' : (chapterTwoBossBuff.interceptReady || ready ? '#fff18a' : '#89f7ff');
+        }
+
+        function updateBossHud() {
+            if(!boss) return;
+            document.getElementById('boss-frame').classList.remove('hidden');
+            document.getElementById('boss-phase').innerText = `PHASE ${boss.phase}`;
+            document.getElementById('boss-bar').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%';
+        }
+
+        function setMission(config, waveText = '') {
+            const title = document.getElementById('mission-title');
+            const subtitle = document.getElementById('mission-subtitle');
+            const wave = document.getElementById('comm-wave');
+            if(title) title.innerText = config.title;
+            if(subtitle) subtitle.innerText = config.subtitle;
+            if(wave) wave.innerText = waveText;
+        }
+
+        function updateChapterTwoHud() {
+            if(chapter !== 2) return;
+            const integrity = convoy ? Math.max(0, Math.ceil(convoy.hp / convoy.maxHp * 100)) : 0;
+            setMission(CHAPTER_TWO, `波次 ${chapterTwoWaves}/${CHAPTER_TWO.targetWaves} // 扫描 ${scansCollected}/${CHAPTER_TWO.scanTargets}`);
+            document.getElementById('comm-text').innerText = `民用矿务驳船护航中。剩余完整度 ${integrity}%。`;
+        }
+
+        function startChapterTwo() {
+            chapter = 2;
+            bgScrollY = 0;
+            generateBackground();
+            branch = null;
+            scansCollected = 0;
+            chapterTwoWaves = 0;
+            chapterFrame = 0;
+            boss = null;
+            bossSpawned = false;
+            bossCrash = null;
+            chapterTwoBoss = null;
+            chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
+            chapterTwoVictory = null;
+            chapterTwoOutroShown = false;
+            entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
+            convoy = new ConvoyHauler();
+            state = 'CH02_PLAY';
+            spawnChapterTwoWave();
+            updateChapterTwoHud();
+        }
+
+        function collectScan() {
+            if(scansCollected >= CHAPTER_TWO.scanTargets) return;
+            scansCollected++;
+            showDialogueId('ch02.scan.' + scansCollected);
+            updateChapterTwoHud();
+        }
+
+        function spawnChapterTwoWave() {
+            if(chapterTwoWaves >= CHAPTER_TWO.targetWaves) return;
+            const scoutCounts = [2, 3, 3, 4];
+            const waveIndex = chapterTwoWaves;
+            let activeRoom = Math.max(0, CHAPTER_TWO.maxActiveMinions - entities.ens.length);
+            const scouts = Math.min(scoutCounts[waveIndex], activeRoom);
+            for(let i = 0; i < scouts; i++) entities.ens.push(new Enemy('scout'));
+            if(waveIndex < CHAPTER_TWO.scanTargets && !entities.scanBeacons.some(beacon => !beacon.collected)) entities.scanBeacons.push(new ScanBeacon());
+            chapterTwoWaves++;
+            updateChapterTwoHud();
+        }
+
+        function ensureChapterTwoScanBeacon() {
+            if(chapter !== 2 || branch || scansCollected >= CHAPTER_TWO.scanTargets) return;
+            if(chapterTwoWaves === 0 || entities.scanBeacons.some(beacon => !beacon.collected)) return;
+            entities.scanBeacons.push(new ScanBeacon());
+        }
+
+        function showChapterTwoChoice() {
+            if(state !== 'CH02_PLAY' || branch) return;
+            state = 'CH02_CHOICE';
+            showDialogueId('ch02.choice.order');
+            document.querySelector('.rogue-title').innerText = 'CONVOY_DECISION // B 区航线';
+            document.getElementById('rogue-note').innerText = '扫描记录确认货船载有平民。选择会立刻写入任务记录。';
+            document.getElementById('cards-container').innerHTML = `
+                <div class="upgrade-card card-rebel" onclick="chooseBranch('protection')" style="--ui-frame:url(${ASSET_PATHS.ui.moduleFrame})">
+                    <div class="branch-art" style="background-image:url(${ASSET_PATHS.ch02.ui.protect})"></div>
+                    <div class="card-type">[护航]</div>
+                    <div class="card-name">Protection</div>
+                    <div class="card-desc">维持护航编队，带货船穿过碎石航道。后果：失去巡逻队信任。</div>
+                </div>
+                <div class="upgrade-card card-empire" onclick="chooseBranch('execute')" style="--ui-frame:url(${ASSET_PATHS.ui.moduleFrame})">
+                    <div class="branch-art" style="background-image:url(${ASSET_PATHS.ch02.ui.execute})"></div>
+                    <div class="card-type">[封锁]</div>
+                    <div class="card-name">Execute</div>
+                    <div class="card-desc">交出货船坐标并接受巡逻队登检。后果：获得巡逻队通行许可。</div>
+                </div>`;
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        window.chooseBranch = function(nextBranch) {
+            if(branch || state !== 'CH02_CHOICE') return;
+            branch = nextBranch === 'protection' ? 'protection' : 'execute';
+            const branchEnemyType = branch === 'protection' ? 'ch02_drone' : 'ch02_interceptor';
+            entities.ens.forEach(enemy => { enemy.type = branchEnemyType; });
+            document.getElementById('rogue-screen').classList.add('hidden');
+            showDialogueId(branch === 'protection' ? 'ch02.choice.rebel' : 'ch02.choice.empire');
+            startChapterTwoBoss(branch);
+            state = 'CH02_PLAY';
+        };
+
+        function showChapterTwoOutro() {
+            if(chapterTwoOutroShown || !branch || !chapterTwoVictory) return;
+            chapterTwoOutroShown = true;
+            state = 'CH02_OUTRO';
+            const protectedConvoy = branch === 'protection';
+            document.querySelector('.rogue-title').innerText = protectedConvoy
+                ? 'CHAPTER_TWO_COMPLETE // 跃迁窗口已打开'
+                : 'CHAPTER_TWO_COMPLETE // 封锁航线已稳定';
+            document.getElementById('rogue-note').innerText = protectedConvoy
+                ? '最后一束封锁光已熄灭，货船正在跃迁离场。第三章预告：救援浮标指向前进基地外环的地下航道。'
+                : 'Runner 已撤回封锁线，货船信号正在淡出。第三章预告：巡逻许可将把你送入前进基地的内侧监听网。';
+            document.getElementById('cards-container').innerHTML = '<button onclick="restartRun()">重新开始完整任务</button>';
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        function failChapterTwo() {
+            if(state !== 'CH02_PLAY') return;
+            state = 'CH02_FAILED';
+            document.querySelector('.rogue-title').innerText = 'MISSION_FAILED // B 区护航中断';
+            document.getElementById('rogue-note').innerText = '护航船已失去航行能力。保留当前驾驶员与改装，重新进入 B 区航线。';
+            document.getElementById('cards-container').innerHTML = '<button onclick="restartChapterTwo()">重试护航</button>';
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        window.restartChapterTwo = function() {
+            document.getElementById('rogue-screen').classList.add('hidden');
+            if(player) {
+                player.hp = player.maxHp;
+                player.x = canvas.width / 2;
+                player.y = canvas.height * 0.8;
+                player.tx = player.x;
+                player.ty = player.y;
+                player.invuln = 90;
+                document.getElementById('hp-bar').style.width = '100%';
+                document.getElementById('comm-hp-bar').style.width = '100%';
+            }
+            startChapterTwo();
+        };
+
+        function resetRun() {
+            openingTimers.forEach(timer => clearTimeout(timer));
+            openingTimers = [];
+            rescuePod = null; rescueScanProgress = 0; openingFrame = 0;
+            frame = 0; score = 0; chapterFrame = 0; boss = null; bossSpawned = false; chapterCleared = false; wavesSpawned = 0; enemiesDestroyed = 0; lastEliteIndex = -1;
+            chapter = 1; branch = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0;
+            bgScrollY = 0;
+            generateBackground();
+            chapterTwoBoss = null; chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
+            chapterTwoVictory = null; chapterTwoOutroShown = false;
+            bossDialogueLock = false; bossCrash = null; endingStarted = false;
+            combatBarkCooldown = 0;
+            entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
+            mods = { pierce: false, laser: false, shield: 0, spread: 0, haste: 1, magnet: 40, armor: 0 };
+            cargo = []; equippedRogue = {}; salvage = 0; dropsGiven = 0;
+            document.getElementById('boss-frame').classList.add('hidden');
+            document.getElementById('exp-bar').style.width = '0%';
+            document.getElementById('hp-bar').style.width = '100%';
+            document.getElementById('hp-bar').style.background = '#0f0';
+            document.getElementById('loadout-line').innerText = '改装：未装配';
+            document.getElementById('comm-refit').innerText = '改装：未装配';
+            document.getElementById('comm-wave').innerText = `0/${CHAPTER_ONE.targetWavesBeforeBoss}`;
+            document.getElementById('comm-pilot').innerText = '未部署';
+            document.getElementById('comm-ability').innerText = '主动技能：准备中';
+            document.getElementById('comm-text').innerText = '信号压低。A 区有断续搜救信标，先确认目标，再开火。';
+        }
+
+        function updateChapterOneOpeningHud() {
+            const pct = Math.min(100, Math.floor(rescueScanProgress / 300 * 100));
+            setMission(CHAPTER_ONE, state === 'CH01_RESCUE' ? `A 区搜救 // 扫描 ${pct}%` : 'A 区搜救 // 等待救援舱');
+            document.getElementById('comm-wave').innerText = state === 'CH01_RESCUE' ? `扫描 ${pct}%` : '简报';
+            if(state === 'CH01_RESCUE') document.getElementById('comm-text').innerText = rescueScanProgress > 0
+                ? `靠近救援舱并保持距离。扫描进度 ${pct}% // 武器锁定。`
+                : '救援舱已标记。靠近目标开始外部扫描。';
+        }
+
+        function beginChapterOneOpening() {
+            state = 'CH01_BRIEFING'; openingFrame = 0; rescueScanProgress = 0; rescuePod = null;
+            updateChapterOneOpeningHud();
+            showDialogueId('ch01.deploy');
+            openingTimers.push(setTimeout(() => showDialogueId('ch01.pilot_status'), 1100));
+            openingTimers.push(setTimeout(() => showDialogueId('ch01.mission_brief'), 2900));
+            openingTimers.push(setTimeout(() => showDialogueId('ch01.distress_signal'), 4700));
+            openingTimers.push(setTimeout(() => { rescuePod = new RescuePod(); state = 'CH01_RESCUE'; updateChapterOneOpeningHud(); }, 5200));
+        }
+
+        function finishChapterOneOpening() {
+            openingTimers.forEach(timer => clearTimeout(timer)); openingTimers = [];
+            rescuePod = null; showDialogueId('ch01.rescue_order');
+            setMission(CHAPTER_ONE, `A 区小行星带 // 波次 0/${CHAPTER_ONE.targetWavesBeforeBoss}`);
+            document.getElementById('comm-wave').innerText = `0/${CHAPTER_ONE.targetWavesBeforeBoss}`;
+            chapterFrame = 0; state = 'PLAYING';
+        }
+
+        function updateChapterOneOpening() {
+            openingFrame++;
+            if(state === 'CH01_BRIEFING') { updateChapterOneOpeningHud(); return; }
+            if(!rescuePod) return;
+            rescuePod.update();
+            const distance = Math.hypot(player.x - rescuePod.x, player.y - rescuePod.y);
+            if(distance < player.r + rescuePod.r * 1.7) {
+                if(rescueScanProgress === 0) showDialogueId('ch01.rescue_scan');
+                rescueScanProgress++; updateChapterOneOpeningHud();
+                if(rescueScanProgress >= 300) finishChapterOneOpening();
+            } else if(openingFrame >= 900) {
+                if(rescueScanProgress < 300) {
+                    rescueScanProgress = 300;
+                    showDialogueId('ch01.rescue_scan');
+                }
+                finishChapterOneOpening();
+            }
+            else updateChapterOneOpeningHud();
+        }
+
+        function spawnWave() {
+            if(wavesSpawned >= CHAPTER_ONE.targetWavesBeforeBoss) return;
+            const activeRoom = Math.max(0, CHAPTER_ONE.maxActiveMinions - entities.ens.length);
+            const desired = CHAPTER_ONE.waveCounts[wavesSpawned] || 4;
+            const count = Math.min(desired, activeRoom);
+            for(let i=0;i<count;i++) entities.ens.push(new Enemy('scout'));
+            wavesSpawned++;
+            document.getElementById('mission-subtitle').innerText = `${CHAPTER_ONE.subtitle} // 波次 ${wavesSpawned}/${CHAPTER_ONE.targetWavesBeforeBoss}`;
+            document.getElementById('comm-wave').innerText = `${wavesSpawned}/${CHAPTER_ONE.targetWavesBeforeBoss}`;
+        }
+
+        function spawnElite() {
+            entities.ens.push(new Enemy('elite', canvas.width * (0.3 + Math.random()*0.4)));
+            showToast('重型改装舰进入小行星带');
+        }
+
+        function spawnBoss() {
+            bossSpawned = true; boss = new Boss();
+            entities.ens = [];
+            showToast('章节 Boss：缝合航母');
+            showDialogueId('ch01.boss_intro');
+        }
+
+        function canSpawnBoss() {
+            return wavesSpawned >= CHAPTER_ONE.targetWavesBeforeBoss &&
+                entities.ens.length <= 3;
+        }
+
+        function maybeDrop(x, y, guaranteed = false) {
+            if(dropsGiven >= CHAPTER_ONE.dropsTarget && !guaranteed) return;
+            if(guaranteed || Math.random() < 0.55) {
+                dropsGiven++;
+                const item = UPGRADES[Math.floor(Math.random()*UPGRADES.length)];
+                cargo.push(item);
+                entities.gems.push(new Gem(x, y));
+                if(guaranteed || dropsGiven === 1 || dropsGiven === 4 || dropsGiven === 7) {
+                    showRogueDrop(item);
+                } else {
+                    showToast(`回收改装模块：${item.name}`);
+                }
+            }
+        }
+
+        function rewardGoldAsteroid() {
+            const owned = Object.values(equippedRogue);
+            if(owned.length) {
+                const picked = owned[Math.floor(Math.random() * owned.length)];
+                picked.level = Math.min(6, picked.level + 2);
+                recalcRogueMods();
+                updateLoadoutHud();
+                showToast(`金属核心裂开：${picked.item.name} 提升至 Lv.${picked.level}`);
+            } else {
+                showToast('金属核心裂开，里面有可用改装。');
+                triggerUpgrade();
+            }
+        }
+
+        function showRogueDrop(item) {
+            state = 'UPGRADE';
+            document.querySelector('.rogue-title').innerText = 'REFIT_MODULE_ACQUIRED // 即时装配';
+            document.getElementById('rogue-note').innerText = `回收到「${item.name}」。这不是奖励弹窗，而是现场抢修：选一项能立刻改变火力、机动或生存的改装。`;
+            const pool = [item, ...UPGRADES.filter(u => u.id !== item.id).sort(()=>0.5-Math.random()).slice(0,2)];
+            document.getElementById('cards-container').innerHTML = pool.map(u => `<div class="upgrade-card card-${u.type}" onclick="applyUpgrade('${u.id}')" style="--ui-frame:url(${ASSET_PATHS.ui.moduleFrame})">
+                    <div class="card-type">[${u.type==='empire'?'缴获技术':'叛军改装'}]</div>
+                    <div class="card-name">${u.name}${equippedRogue[u.id] ? ' Lv.' + (equippedRogue[u.id].level + 1) : ''}</div>
+                    <div class="card-desc">${u.desc}<br><br>${equippedRogue[u.id] ? '重复装配：提升等级，不替换已有模块。' : '新模块：加入当前构筑。'}</div>
+                </div>`).join('');
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        function equipRogue(id) {
+            const item = UPGRADES.find(u => u.id === id);
+            if(!item) return;
+            if(!equippedRogue[id]) equippedRogue[id] = { item, level: 0 };
+            equippedRogue[id].level = Math.min(5, equippedRogue[id].level + 1);
+            recalcRogueMods();
+            updateLoadoutHud();
+            showToast(`${item.name} 装配至 Lv.${equippedRogue[id].level}`);
+        }
+
+        function recalcRogueMods() {
+            const baseMaxHp = PILOTS[pKey].maxHp;
+            const previousHpRatio = player ? Math.max(0.05, player.hp / player.maxHp) : 1;
+            mods = { pierce: false, laser: false, shield: 0, spread: 0, haste: 1, magnet: 40, armor: 0 };
+            Object.values(equippedRogue).forEach(({item, level}) => {
+                if(item.id === 'emp_pierce') mods.pierce = true;
+                if(item.id === 'emp_laser') mods.laser = true;
+                if(item.id === 'reb_spread') mods.spread += level;
+                if(item.id === 'reb_haste') mods.haste += level * 0.28;
+                if(item.id === 'mix_blackbox') mods.magnet += level * 28;
+                if(item.id === 'def_armor') mods.armor += level * 3;
+            });
+            if(player) {
+                const armorLevel = equippedRogue.def_armor?.level || 0;
+                player.maxHp = baseMaxHp + armorLevel * 16;
+                player.hp = Math.min(player.maxHp, Math.max(1, player.maxHp * previousHpRatio + (armorLevel ? 6 : 0)));
+                document.getElementById('hp-bar').style.width = (player.hp/player.maxHp*100) + '%';
+            }
+        }
+
+        function updateLoadoutHud() {
+            const entries = Object.values(equippedRogue).map(({item, level}) => `${item.name} Lv.${level}`);
+            const text = entries.length ? `改装：\n${entries.join('\n')}` : '改装：未装配';
+            document.getElementById('loadout-line').innerText = text;
+            document.getElementById('comm-refit').innerText = text;
+        }
+
+        function updatePilotCommHud() {
+            if(!player) return;
+            const info = PILOTS[pKey];
+            document.getElementById('comm-pilot').innerText = info.name;
+            document.getElementById('comm-ability').innerText = `主动技能：${info.ability} // ${player.abilityCharge >= 100 ? '就绪' : Math.floor(player.abilityCharge) + '%'}`;
+            if(chapterTwoBossBuff.overcharge > 0) {
+                document.getElementById('comm-ability').innerText += ` // OVERCHARGE x2 ${Math.ceil(chapterTwoBossBuff.overcharge / 60)}s`;
+            } else if(chapterTwoBossBuff.interceptReady) {
+                document.getElementById('comm-ability').innerText += ' // INTERCEPT READY';
+            }
+            document.getElementById('comm-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
+            const commAvatar = document.getElementById('comm-pilot-avatar');
+            const hudPortrait = SPRITES.portraits && SPRITES.portraits[pKey];
+            if(isLoaded(hudPortrait)) {
+                commAvatar.innerText = '';
+                commAvatar.style.backgroundImage = `url(${hudPortrait.src})`;
+            } else {
+                commAvatar.style.backgroundImage = '';
+                commAvatar.innerText = info.name;
+            }
+        }
+
+        function endRun(victory) {
+            state = 'RESULT';
+            document.getElementById('boss-frame').classList.add('hidden');
+            if(victory) {
+                salvage = cargo.reduce((sum, item) => sum + (item.id === 'mix_blackbox' ? 18 : 12), 24);
+                showTransition('CHAPTER_CLEAR', '缝合航母解体。救援信标仍在它残骸背后闪烁。', 1100, showChapterDialogue);
+            } else {
+                document.getElementById('rogue-note').innerText = '战机被击毁。第一关纵切从章节开头重新部署。';
+                document.getElementById('cards-container').innerHTML = `<button onclick="restartRun()">重新部署</button>`;
+                document.querySelector('.rogue-title').innerText = 'MISSION_FAILED // A 区信号中断';
+                document.getElementById('rogue-screen').classList.remove('hidden');
+            }
+        }
+
+        function showChapterSalvage() {
+            document.querySelector('.rogue-title').innerText = 'TACTICAL_RECOVERY // 第一章完成';
+            document.getElementById('rogue-note').innerText = `扫描结果与战报不一致：缝合航母一直挡在逃生舱和小行星雨之间。回收 ${cargo.length} 件改装模块，变卖获得 ${salvage} 废料。`;
+            const picks = [
+                {name:'红线校准', desc:'主炮伤害 +15%，下一章开局获得额外经验。'},
+                {name:'应急装甲', desc:'最大装甲 +20，章节开始获得短暂护盾。'},
+                {name:'黑匣索引', desc:'保留一条矛盾证据，后续剧情碎片出现率提高。'}
+            ];
+            document.getElementById('cards-container').innerHTML = picks.map(p => `<div class="upgrade-card card-empire" onclick="finishQuartermasterRefit()"><div class="card-type">[章节整备]</div><div class="card-name">${p.name}</div><div class="card-desc">${p.desc}<br><br>选择此整备后，立即投入 B 区紧急护航。</div></div>`).join('');
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        function showChapterDialogue() {
+            showDialogueId('ch01.debrief');
+            document.querySelector('.rogue-title').innerText = 'AFTER_ACTION_DIALOGUE // 第一章战报';
+            document.getElementById('rogue-note').innerText = '战报已归档。回收残骸后，返回前进基地。';
+            document.getElementById('cards-container').innerHTML = `<button onclick="showRouteMap()">打开改装路线图</button>`;
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        window.showRouteMap = function() {
+            document.querySelector('.rogue-title').innerText = 'SHIP_REFIT_MAP // 当前改装路线';
+            document.getElementById('rogue-note').innerText = `回收 ${cargo.length} 件改装模块，预计变卖 ${salvage} 废料。路线图用于确认当前构筑方向，下一步进入章节整备。`;
+            const spreadLevel = equippedRogue.reb_spread?.level || 0;
+            const laserLevel = equippedRogue.emp_laser?.level || 0;
+            const controlLevel = (equippedRogue.emp_pierce?.level || 0) + (equippedRogue.mix_blackbox?.level || 0);
+            const defenseLevel = equippedRogue.def_armor?.level || 0;
+            const hasteLevel = equippedRogue.reb_haste?.level || 0;
+            const nodes = [
+                {name:'火力路线', active: spreadLevel + laserLevel + hasteLevel > 0, desc:`散射 Lv.${spreadLevel} / 激光 Lv.${laserLevel} / 超载 Lv.${hasteLevel}。强化直接输出与清场速度。`},
+                {name:'控制路线', active: controlLevel > 0 || pKey === 'bob', desc:`穿透/黑匣合计 Lv.${controlLevel}。Bob 额外获得锁定减速收益。`},
+                {name:'生存路线', active: defenseLevel > 0, desc:`复合装甲 Lv.${defenseLevel}。提高装甲和容错，适合进入第二章前保守整备。`}
+            ];
+            document.getElementById('cards-container').innerHTML = `<div class="route-map">${nodes.map(n => `<div class="route-node ${n.active ? 'active' : ''}"><h3>${n.name}</h3><p>${n.desc}</p></div>`).join('')}</div><button onclick="showChapterSalvage()">进入战术回收</button>`;
+        }
+
+        window.finishQuartermasterRefit = function() {
+            document.getElementById('rogue-screen').classList.add('hidden');
+            state = 'QUARTERMASTER';
+            showDialogueId('ch02.quartermaster.armor');
+            setTimeout(() => showDialogueId('ch02.quartermaster.manifest'), 1800);
+            showTransition('B 区紧急护航', '军需官完成整备。民用矿务驳船正在穿越 B 区碎石航道，立刻护送并扫描异常信号。', 2600, startChapterTwo);
+        };
+
+        window.restartRun = function() { location.reload(); }
+
+        // --- 逻辑控制 ---
+
+        function triggerUpgrade() {
+            state = 'UPGRADE';
+            let html = '';
+            let pool = [...UPGRADES].sort(()=>0.5-Math.random()).slice(0,3);
+            pool.forEach(u => {
+                html += `<div class="upgrade-card card-${u.type}" onclick="applyUpgrade('${u.id}')">
+                    <div class="card-type">[${u.type==='empire'?'缴获技术':'叛军改装'}]</div>
+                    <div class="card-name">${u.name}${equippedRogue[u.id] ? ' Lv.' + (equippedRogue[u.id].level + 1) : ''}</div>
+                    <div class="card-desc">${u.desc}<br><br>${equippedRogue[u.id] ? '重复选择会升级该模块。' : '选择后加入当前构筑。'}</div>
+                </div>`;
+            });
+            document.getElementById('cards-container').innerHTML = html;
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        window.applyUpgrade = function(id) {
+            equipRogue(id);
+            document.getElementById('rogue-screen').classList.add('hidden');
+            document.querySelector('.rogue-title').innerText = 'TACTICAL_REFIT_READY // 选择改装路线';
+            document.getElementById('rogue-note').innerText = '战斗暂停。选择一项模块后继续推进第一章。';
+            state = 'PLAYING';
+        }
+
+        function loop() {
+            if(state==='MENU') return;
+            requestAnimationFrame(loop); frame++;
+            
+            // 绘制视差背景
+            bgScrollY = (bgScrollY + 0.5) % (bgCanvas.height/2);
+            ctx.drawImage(bgCanvas, 0, bgScrollY - bgCanvas.height/2);
+            ctx.drawImage(bgCanvas, 0, bgScrollY);
+            
+            if(state === 'CH01_BRIEFING' || state === 'CH01_RESCUE') {
+                updateChapterOneOpening();
+                player.update();
+            } else if(state==='PLAYING') {
+                chapterFrame++;
+                if(combatBarkCooldown > 0) combatBarkCooldown--;
+                if(pierceFeedbackCooldown > 0) pierceFeedbackCooldown--;
+                if(!bossSpawned && chapterFrame % CHAPTER_ONE.waveIntervalFrames === 0) {
+                    spawnWave();
+                    if(CHAPTER_ONE.eliteWaves.includes(wavesSpawned)) spawnElite();
+                }
+                if(chapterFrame % CHAPTER_ONE.asteroidIntervalFrames === 80) {
+                    entities.asteroids.push(new Asteroid(Math.random() < goldAsteroidChance()));
+                }
+                if(!bossSpawned && canSpawnBoss()) spawnBoss();
+                score++;
+                
+                // 实体碰撞逻辑
+                entities.ens.forEach((e,i) => {
+                    e.update();
+                    entities.pjs.forEach((pj,j) => {
+                        if(e.dead) return;
+                        if(pj.hit.has(e)) return;
+                        if(projectileHits(pj, e)) {
+                            e.hp -= pj.dmg; pj.hit.add(e);
+                            explode(pj.x, pj.y, pj.c);
+                            showPierceFeedback(pj);
+                            if(!pj.p) entities.pjs.splice(j,1);
+                            if(e.hp<=0) {
+                                killEnemy(e);
+                            }
+                        }
+                    });
+                    entities.missiles.forEach((m,j) => {
+                        if(e.dead) return;
+                        if(Math.hypot(m.x-e.x, m.y-e.y) < e.r+m.r) {
+                            e.hp -= m.dmg; explode(m.x, m.y, m.c); entities.missiles.splice(j,1);
+                            if(e.hp<=0) killEnemy(e);
+                        }
+                    });
+                    if(Math.hypot(player.x-e.x, player.y-e.y) < player.r+e.r) {
+                        player.damage(e.damage);
+                        if(player.abilityActive > 0 && pKey === 'alice') {
+                            e.hp -= 120; explode(e.x, e.y, PILOTS[pKey].color);
+                            if(e.hp <= 0) killEnemy(e);
+                        }
+                    }
+                });
+
+                entities.gems.forEach((g,i) => {
+                    g.update();
+                    if(Math.hypot(player.x-g.x, player.y-g.y) < player.r+mods.magnet) {
+                        player.addExp(); entities.gems.splice(i,1);
+                    }
+                });
+                entities.heals.forEach((h,i) => {
+                    if(!h.update()) { entities.heals.splice(i,1); return; }
+                    if(Math.hypot(player.x-h.x, player.y-h.y) < player.r + 18) {
+                        player.heal(22); entities.heals.splice(i,1);
+                    }
+                });
+
+                entities.asteroids.forEach((a,i) => {
+                    a.update();
+                    entities.pjs.forEach((pj,j) => {
+                        if(projectileHits(pj, a)) {
+                            a.hp -= pj.dmg; explode(pj.x, pj.y, '#8d8580');
+                            if(!pj.p) entities.pjs.splice(j,1);
+                        }
+                    });
+                    entities.missiles.forEach((m,j) => {
+                        if(Math.hypot(m.x-a.x, m.y-a.y) < a.r+m.r) {
+                            a.hp -= m.dmg; explode(m.x, m.y, '#8d8580'); entities.missiles.splice(j,1);
+                        }
+                    });
+                    if(Math.hypot(player.x-a.x, player.y-a.y) < player.r+a.r*0.82) {
+                        player.damage(a.damage);
+                        entities.asteroids.splice(i,1);
+                        explode(a.x, a.y, '#8d8580');
+                    } else if(a.hp <= 0) {
+                        entities.asteroids.splice(i,1);
+                        explode(a.x, a.y, '#8d8580');
+                        if(a.isGold) rewardGoldAsteroid();
+                    }
+                });
+
+                if(boss) {
+                    boss.update();
+                    entities.pjs.forEach((pj,j) => {
+                        const weakBonus = boss.weakOpen > 0 ? 1.8 : 1;
+                        if(projectileHits(pj, boss)) {
+                            boss.hp -= pj.dmg * weakBonus; explode(pj.x, pj.y, pj.c);
+                            if(!pj.p) entities.pjs.splice(j,1);
+                        }
+                    });
+                    entities.missiles.forEach((m,j) => {
+                        if(Math.hypot(m.x-boss.x, m.y-boss.y) < boss.r+m.r) {
+                            boss.hp -= m.dmg * (boss.weakOpen > 0 ? 1.8 : 1); explode(m.x, m.y, m.c); entities.missiles.splice(j,1);
+                        }
+                    });
+                    if(Math.hypot(player.x-boss.x, player.y-boss.y) < player.r+boss.r*0.72) player.damage(boss.damage);
+                    if(boss.hp <= 0 && !chapterCleared) {
+                        chapterCleared = true;
+                        explode(boss.x, boss.y, '#ff7a2c');
+                        bossCrash = new BossCrash(boss);
+                        boss = null;
+                        state = 'BOSS_CRASH';
+                        showDialogue('SYSTEM', '战报开始上传：目标残骸正在下坠，航线后方的逃生舱已经脱离炮火。');
+                    }
+                }
+
+                entities.epjs.forEach((b,i) => {
+                    b.update();
+                    if(Math.hypot(player.x-b.x, player.y-b.y) < player.r+b.r) { player.damage(b.dmg); entities.epjs.splice(i,1); }
+                });
+                entities.pjs.forEach(p=>p.update());
+                entities.missiles.forEach(m=>m.update());
+                entities.particles.forEach(p=>p.update());
+                player.update();
+                
+                // 清理
+                entities.pjs = entities.pjs.filter(p=>p.y>-50);
+                entities.epjs = entities.epjs.filter(p=>p.y<canvas.height+50 && p.x>-50 && p.x<canvas.width+50);
+                entities.missiles = entities.missiles.filter(m=>m.life>0 && m.y>-80 && m.y<canvas.height+80 && m.x>-80 && m.x<canvas.width+80);
+                entities.ens = entities.ens.filter(e=>e.hp>0 && !e.dead);
+                entities.asteroids = entities.asteroids.filter(a=>!a.offscreen);
+                entities.gems = entities.gems.filter(g=>g.y<canvas.height+50);
+                entities.particles = entities.particles.filter(p=>p.a>0);
+            } else if(state === 'CH02_PLAY') {
+                chapterFrame++;
+                const chapterTwoBossActive = !!chapterTwoBoss && !isChapterTwoBossDefeated();
+                if(!chapterTwoBossActive && !branch && chapterTwoWaves < CHAPTER_TWO.targetWaves && chapterFrame % CHAPTER_TWO.waveIntervalFrames === 0) {
+                    spawnChapterTwoWave();
+                }
+
+                drawChapterTwoScanCorridor();
+                convoy.update();
+                if(chapterTwoBossActive) updateChapterTwoBoss();
+                entities.ens.forEach((e, i) => {
+                    e.update();
+                    entities.pjs.forEach((pj, j) => {
+                        if(e.dead || pj.hit.has(e)) return;
+                        if(projectileHits(pj, e)) {
+                            e.hp -= pj.dmg * chapterTwoPlayerDamageMultiplier();
+                            pj.hit.add(e);
+                            explode(pj.x, pj.y, pj.c);
+                            showPierceFeedback(pj);
+                            if(!pj.p) entities.pjs.splice(j, 1);
+                            if(e.hp <= 0) killEnemy(e);
+                        }
+                    });
+                    entities.missiles.forEach((m, j) => {
+                        if(e.dead) return;
+                        if(Math.hypot(m.x - e.x, m.y - e.y) < e.r + m.r) {
+                            e.hp -= m.dmg * chapterTwoPlayerDamageMultiplier();
+                            explode(m.x, m.y, m.c);
+                            entities.missiles.splice(j, 1);
+                            if(e.hp <= 0) killEnemy(e);
+                        }
+                    });
+                    if(!e.dead && Math.hypot(convoy.x - e.x, convoy.y - e.y) < convoy.r + e.r) {
+                        const destroyed = convoy.damage(e.damage);
+                        e.dead = true;
+                        explode(e.x, e.y, '#ff8a5c');
+                        updateChapterTwoHud();
+                        if(destroyed) failChapterTwo();
+                    } else if(!e.dead && Math.hypot(player.x - e.x, player.y - e.y) < player.r + e.r) {
+                        player.damage(e.damage);
+                    }
+                });
+
+                entities.scanBeacons.forEach(beacon => beacon.update());
+                ensureChapterTwoScanBeacon();
+                entities.heals.forEach((h,i) => {
+                    if(!h.update()) { entities.heals.splice(i,1); return; }
+                    if(Math.hypot(player.x-h.x, player.y-h.y) < player.r + 18) {
+                        player.heal(22); entities.heals.splice(i,1);
+                    }
+                });
+                entities.epjs.forEach((b, i) => {
+                    b.update();
+                    if(chapterTwoBossActive && Math.hypot(convoy.x - b.x, convoy.y - b.y) < convoy.r + b.r) {
+                        const destroyed = convoy.damage(b.dmg);
+                        entities.epjs.splice(i, 1);
+                        updateChapterTwoBossObjectives();
+                        if(destroyed) failChapterTwo();
+                    } else if(Math.hypot(player.x - b.x, player.y - b.y) < player.r + b.r) {
+                        player.damage(b.dmg);
+                        entities.epjs.splice(i, 1);
+                    }
+                });
+                if(chapterTwoBossActive) {
+                    entities.pjs.forEach((pj, j) => {
+                        if(!pj.p && pj.hit.size > 0) return;
+                        if(damageChapterTwoBoss(pj)) {
+                            if(!pj.p) entities.pjs.splice(j, 1);
+                        }
+                    });
+                    entities.missiles.forEach((m, j) => {
+                        if(damageChapterTwoBoss(m)) entities.missiles.splice(j, 1);
+                    });
+                    if(isChapterTwoBossDefeated()) startChapterTwoVictory();
+                }
+                entities.pjs.forEach(p => p.update());
+                entities.missiles.forEach(m => m.update());
+                entities.particles.forEach(p => p.update());
+                player.update();
+
+                entities.pjs = entities.pjs.filter(p => p.y > -220 && p.y < canvas.height + 80 && p.x > -80 && p.x < canvas.width + 80);
+                entities.epjs = entities.epjs.filter(p => p.y < canvas.height + 80 && p.x > -80 && p.x < canvas.width + 80);
+                entities.missiles = entities.missiles.filter(m => m.life > 0 && m.y > -80 && m.y < canvas.height + 80 && m.x > -80 && m.x < canvas.width + 80);
+                entities.ens = entities.ens.filter(e => e.hp > 0 && !e.dead);
+                entities.scanBeacons = entities.scanBeacons.filter(beacon => !beacon.collected);
+                entities.heals = entities.heals.filter(h => !h.collected && h.life > 0);
+                entities.particles = entities.particles.filter(p => p.a > 0);
+                if(!chapterTwoBoss && !branch && chapterTwoWaves === CHAPTER_TWO.targetWaves && scansCollected === CHAPTER_TWO.scanTargets && entities.ens.length === 0) {
+                    showChapterTwoChoice();
+                }
+            } else if(state === 'CH02_VICTORY') {
+                updateChapterTwoVictory();
+                entities.particles.forEach(p => p.update());
+                entities.particles = entities.particles.filter(p => p.a > 0);
+            } else if (state === 'BOSS_CRASH') {
+                if(bossCrash) {
+                    const done = bossCrash.update();
+                    entities.particles.forEach(p=>p.update());
+                    entities.particles = entities.particles.filter(p=>p.a>0);
+                    if(done) {
+                        bossCrash = null;
+                        if(!endingStarted) {
+                            endingStarted = true;
+                            endRun(true);
+                        }
+                    }
+                }
+                player.update();
+            } else if (state === 'UPGRADE') {
+                // 升级时背景变暗，玩家静止
+                ctx.fillStyle = 'rgba(235,245,248,0.38)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                player.update();
+            }
+        }
+
+        // --- 交互 ---
+        document.querySelectorAll('.pilot-card').forEach(el => {
+            el.onclick = () => { 
+                document.querySelectorAll('.pilot-card').forEach(c=>c.classList.remove('active')); 
+                el.classList.add('active'); pKey=el.dataset.pilot; 
+            }
+        });
+
+        document.getElementById('startBtn').onclick = async () => {
+            if(!dialogueSourceLoaded) await loadDialogueSource();
+            resetRun();
+            document.getElementById('center-screen').classList.add('hidden'); 
+            document.getElementById('hud-top').classList.remove('hidden');
+            let info = PILOTS[pKey];
+            document.getElementById('pilot-name-disp').innerText = `${info.name} | ${info.shipName}`; 
+            document.getElementById('comm-pilot').innerText = info.name;
+            const hudAvatar = document.getElementById('avatar-box');
+            const hudPortrait = SPRITES.portraits && SPRITES.portraits[pKey];
+            if(isLoaded(hudPortrait)) {
+                document.getElementById('avatar-emoji').innerText = '';
+                hudAvatar.style.backgroundImage = `url(${hudPortrait.src})`;
+                hudAvatar.style.backgroundSize = 'cover';
+                hudAvatar.style.backgroundPosition = 'center';
+            } else {
+                document.getElementById('avatar-emoji').innerText = info.name;
+                hudAvatar.style.backgroundImage = '';
+            }
+            document.getElementById('avatar-panel').style.borderLeftColor = info.color;
+            document.getElementById('mission-title').innerText = CHAPTER_ONE.title;
+            document.getElementById('mission-subtitle').innerText = `${CHAPTER_ONE.subtitle} // ${info.abilityHint}`;
+            
+            generateBackground(); // 初始化预渲染背景
+            player = new Player();
+            state = 'TRANSITION';
+            showTransition('DEPLOY_TO_SECTOR_A', `机库闸门开启。${info.shipName} 正在切入 A 区小行星带，前方有微弱搜救信号。`, 1000, () => {
+                beginChapterOneOpening();
+            });
+            loop();
+        };
+
+        window.onmousemove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.clientX; player.ty=e.clientY; }};
+        window.ontouchmove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.touches[0].clientX; player.ty=e.touches[0].clientY-60; e.preventDefault();} };
+        window.onkeydown = e => { if(e.code === 'Space' && player && !useChapterTwoIntercept()) player.useAbility(); };
+        window.ondblclick = () => { if(player && !useChapterTwoIntercept()) player.useAbility(); };
+
+    </script>
+</body>
+</html>

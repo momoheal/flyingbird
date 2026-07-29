@@ -1,0 +1,196 @@
+{
+  "chapter": "ch01",
+  "description": "First chapter runtime asset manifest for the HTML prototype and future SpriteKit migration.",
+  "assets": [
+    {
+      "id": "player_alice_top",
+      "path": "assets/ch01/player/sf_ch01_player_alice_top_512.png",
+      "type": "player",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "player_bob_top",
+      "path": "assets/ch01/player/sf_ch01_player_bob_top_512.png",
+      "type": "player",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "player_charlie_top",
+      "path": "assets/ch01/player/sf_ch01_player_charlie_top_512.png",
+      "type": "player",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "enemy_rebel_skiff_a",
+      "path": "assets/ch01/enemy/sf_ch01_enemy_rebel_skiff_a_256.png",
+      "type": "enemy",
+      "size": [
+        256,
+        256
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "enemy_empire_drone_a",
+      "path": "assets/ch01/enemy/sf_ch01_enemy_empire_drone_a_256.png",
+      "type": "enemy",
+      "size": [
+        256,
+        256
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "enemy_rebel_elite_salvager",
+      "path": "assets/ch01/enemy/sf_ch01_enemy_rebel_elite_salvager_512.png",
+      "type": "enemy",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "boss_stitched_carrier_phase01",
+      "path": "assets/ch01/boss/sf_ch01_boss_stitched_carrier_phase01_2048.png",
+      "type": "boss",
+      "size": [
+        2048,
+        1024
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "boss_stitched_carrier_phase02",
+      "path": "assets/ch01/boss/sf_ch01_boss_stitched_carrier_phase02_damaged_2048.png",
+      "type": "boss",
+      "size": [
+        2048,
+        1024
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "boss_stitched_carrier_phase03",
+      "path": "assets/ch01/boss/sf_ch01_boss_stitched_carrier_phase03_core_2048.png",
+      "type": "boss",
+      "size": [
+        2048,
+        1024
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "bg_sector_a_scrapyard",
+      "path": "assets/ch01/bg/sf_ch01_bg_sector_a_scrapyard_2048x1152.png",
+      "type": "background",
+      "size": [
+        2048,
+        1152
+      ],
+      "alphaRequired": false
+    },
+    {
+      "id": "fx_laser_core",
+      "path": "assets/ch01/fx/sf_ch01_fx_laser_core_512.png",
+      "type": "fx",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "fx_explosion_spark",
+      "path": "assets/ch01/fx/sf_ch01_fx_explosion_spark_512.png",
+      "type": "fx",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "portrait_alice_comm",
+      "path": "assets/ch01/portrait/sf_ch01_portrait_alice_comm_512.png",
+      "type": "portrait",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "portrait_bob_comm",
+      "path": "assets/ch01/portrait/sf_ch01_portrait_bob_comm_512.png",
+      "type": "portrait",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "portrait_charlie_comm",
+      "path": "assets/ch01/portrait/sf_ch01_portrait_charlie_comm_512.png",
+      "type": "portrait",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "portrait_rebel_commander",
+      "path": "assets/ch01/portrait/sf_ch01_portrait_rebel_commander_512.png",
+      "type": "portrait",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "ui_card_module_frame",
+      "path": "assets/ch01/ui/sf_ch01_ui_card_module_frame_512.png",
+      "type": "ui",
+      "size": [
+        512,
+        512
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "ui_route_control",
+      "path": "assets/ch01/ui/sf_ch01_ui_route_control_256.png",
+      "type": "ui",
+      "size": [
+        256,
+        256
+      ],
+      "alphaRequired": true
+    },
+    {
+      "id": "ui_route_defense",
+      "path": "assets/ch01/ui/sf_ch01_ui_route_defense_256.png",
+      "type": "ui",
+      "size": [
+        256,
+        256
+      ],
+      "alphaRequired": true
+    }
+  ]
+}
