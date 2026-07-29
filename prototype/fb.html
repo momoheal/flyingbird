@@ -92,6 +92,17 @@
         .route-node.active { border-color: #d69b2c; box-shadow: 0 16px 28px rgba(0,0,0,.36); }
         .route-node h3 { margin: 0 0 10px; font-size: 18px; color: #f2fbfd; }
         .route-node p { margin: 0; color: #c4dbe0; font-size: 13px; line-height: 1.45; }
+        #story-choice-screen { position: fixed; inset: 0; z-index: 115; display: grid; place-items: center; padding: 18px; box-sizing: border-box; background: rgba(2, 8, 12, .88); pointer-events: auto; }
+        .story-choice-panel { width: min(760px, 100%); max-height: calc(100vh - 36px); overflow: auto; box-sizing: border-box; padding: 22px; border: 2px solid #80e6f5; border-left: 7px solid #e0a83a; background: #0b151b; color: #e9f7fa; font-family: monospace; box-shadow: 0 18px 48px rgba(0,0,0,.66); }
+        .story-choice-channel { color: #80e6f5; font-weight: 800; letter-spacing: 1px; }
+        .story-choice-quote { margin: 16px 0; padding: 14px; border-left: 4px solid #e0a83a; background: #14232a; font-size: 18px; line-height: 1.55; }
+        .story-choice-situation { color: #c4dbe0; line-height: 1.55; margin-bottom: 16px; }
+        .story-choice-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .story-choice-actions button { min-height: 132px; padding: 14px; text-align: left; background: #173039; border: 2px solid #80e6f5; letter-spacing: 0; text-transform: none; }
+        .story-choice-actions button:hover, .story-choice-actions button:focus-visible { background: #284d59; outline: 3px solid #fff18a; outline-offset: 2px; }
+        .story-choice-icon { display: block; font-size: 22px; margin-bottom: 8px; }
+        .story-choice-cost { display: block; margin-top: 8px; color: #d7e7bc; font-size: 13px; line-height: 1.45; }
+        @media (max-width: 420px) { #story-choice-screen { padding: 8px; } .story-choice-panel { max-height: calc(100vh - 16px); padding: 14px; } .story-choice-actions { grid-template-columns: 1fr; } .story-choice-actions button { min-height: 0; } .story-choice-quote { font-size: 16px; } }
     </style>
 </head>
 <body>
@@ -156,6 +167,7 @@
         <div id="rogue-note" class="rogue-note">战斗暂停。选择一项模块后继续推进第一章。</div>
         <div id="cards-container"></div>
     </div>
+    <div id="story-choice-screen" class="hidden" role="dialog" aria-modal="true" aria-labelledby="story-choice-channel"></div>
     <div id="toast">MISSION EVENT</div>
     <div id="transition-screen">
         <div id="transition-panel">
@@ -246,6 +258,14 @@
             maxActiveMinions: 12
         };
 
+        const CHAPTER_FIVE = {
+            title: '第五章：第 09 隔离关口',
+            subtitle: '避难所外环 // 塌方、封门与爆破船',
+            targetWaves: 3,
+            waveIntervalFrames: 180,
+            shelterHp: 210
+        };
+
         const ASSET_PATHS = {
             backgrounds: {
                 ch01: '../art/sf_ch01_bg_sector_a_scrapyard_source.png',
@@ -306,6 +326,7 @@
         let bossDialogueLock = false;
         let bossCrash = null;
         let endingStarted = false;
+        let gate09 = null;
         let combatBarkCooldown = 0;
         let pierceFeedbackCooldown = 0;
         let entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
@@ -680,7 +701,7 @@
                 this.abilityCharge = 0; this.abilityActive = 0; this.invuln = 0;
             }
             update() {
-                if(state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH01_BRIEFING' || state === 'CH01_RESCUE') {
+                if(state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH05_PLAY' || state === 'ENDING_PLAY' || state === 'CH01_BRIEFING' || state === 'CH01_RESCUE') {
                     let spd = PILOTS[pKey].spd;
                     if(this.abilityActive > 0 && pKey === 'alice') spd *= 1.65;
                     this.x += (this.tx-this.x)*spd; this.y += (this.ty-this.y)*spd;
@@ -690,7 +711,7 @@
                     let fr = Math.floor(PILOTS[pKey].fr / mods.haste);
                     // Scanning remains an active flight state: keep automatic fire enabled
                     // during rescue/beacon scans, while the opening briefing stays weapon-locked.
-                    if((state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH01_RESCUE') && frame % Math.max(3, fr) === 0) this.shoot();
+                    if((state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH05_PLAY' || state === 'ENDING_PLAY' || state === 'CH01_RESCUE') && frame % Math.max(3, fr) === 0) this.shoot();
                     this.abilityCharge = Math.min(100, this.abilityCharge + (pKey === 'bob' ? 0.26 : 0.18));
                     if(this.abilityActive > 0) this.abilityActive--;
                     if(this.invuln > 0) this.invuln--;
@@ -745,6 +766,7 @@
                 explode(this.x, this.y, '#f33');
                 if(this.hp <= 0) {
                     if(chapter === 2) failChapterTwo();
+                    else if(chapter === 5) failGate09();
                     else endRun(false);
                 }
             }
@@ -759,7 +781,7 @@
                 explode(this.x, this.y, '#55ff88');
             }
             useAbility() {
-                if((state !== 'PLAYING' && state !== 'CH02_PLAY') || this.abilityCharge < 100) return;
+                if((state !== 'PLAYING' && state !== 'CH02_PLAY' && state !== 'CH05_PLAY' && state !== 'ENDING_PLAY') || this.abilityCharge < 100) return;
                 this.abilityCharge = 0;
                 if(pKey === 'alice') {
                     this.abilityActive = 150; this.invuln = 150;
@@ -1378,6 +1400,36 @@
             return { localizedName: name, commSpeaker: PILOTS[pKey].name, portraitKey: pKey, fallbackLabel: 'SYS' };
         }
 
+        class GateObjective {
+            constructor(kind, label, x, y, hp = 90) {
+                this.kind = kind; this.label = label; this.x = x; this.y = y; this.r = kind === 'core' ? 17 : 28;
+                this.maxHp = hp; this.hp = hp; this.done = false; this.upload = 0;
+            }
+            damage(amount) {
+                if(this.done || this.kind === 'core' || this.kind === 'blackbox') return false;
+                this.hp = Math.max(0, this.hp - amount);
+                if(this.hp === 0) { this.done = true; explode(this.x, this.y, '#ffbd5c'); }
+                return this.done;
+            }
+            update() {
+                if(this.done) return;
+                if((this.kind === 'core' || this.kind === 'blackbox') && player && Math.hypot(player.x - this.x, player.y - this.y) < player.r + 34) {
+                    this.upload += this.kind === 'blackbox' ? 1.8 : 100;
+                    if(this.upload >= 100) { this.done = true; explode(this.x, this.y, '#80e6f5'); }
+                }
+                ctx.save(); ctx.translate(this.x, this.y);
+                const intact = Math.max(0, this.hp / this.maxHp);
+                ctx.fillStyle = this.kind === 'filter' ? '#194446' : this.kind === 'core' || this.kind === 'blackbox' ? '#315365' : '#4b2d25';
+                ctx.strokeStyle = this.kind === 'filter' ? '#a8f06a' : '#80e6f5'; ctx.lineWidth = 3;
+                if(this.kind === 'core' || this.kind === 'blackbox') { ctx.rotate(frame / 50); ctx.fillRect(-this.r, -this.r, this.r * 2, this.r * 2); }
+                else { ctx.beginPath(); ctx.moveTo(0,-this.r); ctx.lineTo(this.r,this.r); ctx.lineTo(-this.r,this.r); ctx.closePath(); ctx.fill(); }
+                ctx.stroke();
+                ctx.fillStyle = '#081014'; ctx.fillRect(-this.r, this.r + 9, this.r * 2, 5);
+                ctx.fillStyle = intact > .45 ? '#80e6f5' : '#ff8a5c'; ctx.fillRect(-this.r, this.r + 9, this.r * 2 * intact, 5);
+                ctx.restore();
+            }
+        }
+
         function showDialogue(name, text) {
             const box = document.getElementById('dialogue-box');
             const avatar = document.getElementById('dialogue-avatar');
@@ -1564,10 +1616,23 @@
 
         function startChapterFive(run = narrativeRun) {
             if(run !== narrativeRun || state !== 'INTERLUDE') return;
-            state = 'CH05_PLAY';
-            showDialogueId('ch05.intro');
-            showTransition('GATE_09', '第 09 隔离关口：避难所外环正在坍塌。', 1200);
+            chapter = 5; chapterFrame = 0;
+            entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
+            gate09 = { waves: 0, choiceShown: false, shelter: new GateObjective('shelter', 'SHELTER 09', canvas.width / 2, canvas.height * .27, CHAPTER_FIVE.shelterHp), targets: [] };
+            state = 'CH05_PLAY'; showDialogueId('ch05.intro'); updateGate09Hud();
+            showTransition('GATE_09', 'GATE 09 collapse alert', 1200, spawnGateWave);
         }
+        function updateGate09Hud() { if(!gate09) return; const integrity = Math.ceil(gate09.shelter.hp / gate09.shelter.maxHp * 100); setMission(CHAPTER_FIVE, `WAVE ${gate09.waves}/${CHAPTER_FIVE.targetWaves} // ${state === 'ENDING_PLAY' ? gateObjectiveText() : `SHELTER ${integrity}%`}`); document.getElementById('comm-text').innerText = state === 'ENDING_PLAY' ? gateObjectiveText() : `SHELTER 09 integrity ${integrity}%`; }
+        function spawnGateWave() { if(!gate09 || state !== 'CH05_PLAY' || gate09.waves >= CHAPTER_FIVE.targetWaves) return; const mixes = [[['scout','ch05_drone'],['scout','ch05_rust']],[['elite','ch05_rust'],['scout','ch05_drone'],['scout','ch05_rust']],[['elite','ch05_drone'],['elite','ch05_rust'],['scout','ch05_drone']]]; for(const [kind,type] of mixes[gate09.waves]) { const enemy = new Enemy(kind); enemy.type = type; enemy.damage += 3; entities.ens.push(enemy); } gate09.waves++; updateGate09Hud(); }
+        function renderStoryChoice({ channel, quote, situation, choices }) { const screen = document.getElementById('story-choice-screen'); const icons = { seal_gate:'[S]', break_blockade:'[B]', deep_rock:'[D]' }; screen.innerHTML = `<section class="story-choice-panel"><div id="story-choice-channel" class="story-choice-channel">${channel}</div><div class="story-choice-quote">${quote}</div><div class="story-choice-situation">${situation}</div><div class="story-choice-actions">${choices.map(choice => `<button type="button" data-route="${choice.id}"><span class="story-choice-icon" aria-hidden="true">${icons[choice.id] || '[R]'}</span><strong>${choice.label}</strong><span class="story-choice-cost">COST: ${choice.cost}</span></button>`).join('')}</div></section>`; screen.querySelectorAll('[data-route]').forEach(button => button.addEventListener('click', () => chooseGateRoute(button.dataset.route))); screen.classList.remove('hidden'); screen.querySelector('button')?.focus(); }
+        function showGateChoice() { if(state !== 'CH05_PLAY' || !gate09 || gate09.choiceShown) return; gate09.choiceShown = true; state = 'CH05_CHOICE'; showDialogueId('ch05.mara'); renderStoryChoice({ channel:'OPEN CHANNEL // SHELTER 09', quote:'\u59d0\u59d0\uff0c\u4e0b\u9762\u6ca1\u6709\u706f\u3002\u5988\u5988\u8bf4\u522b\u8dd1\uff0c\u53ef\u662f\u5730\u677f\u4e00\u76f4\u5728\u52a8\u3002', situation:'\u6c38\u4e45\u5c01\u95e8\u3001\u4f59\u70ec\u7206\u7834\u8239\u4e0e\u584c\u65b9\u533a\u540c\u65f6\u8fdb\u5165\u5012\u8ba1\u65f6\u3002', choices:[{id:'seal_gate',label:'\u5b88\u4f4f\u533b\u7597\u95e8',cost:'\u963b\u6b62\u7206\u7834\u8239\uff0c\u4f46\u95e8\u5185\u90e8\u5206\u4eba\u5c06\u88ab\u6c38\u4e45\u9694\u79bb\u3002'},{id:'break_blockade',label:'\u6253\u5f00\u5c01\u9501',cost:'\u4e3a\u8239\u961f\u6495\u5f00\u7a97\u53e3\uff0c\u4f46\u9508\u8680\u53ef\u80fd\u8fdb\u5165\u4e3b\u822a\u9053\u3002'},{id:'deep_rock',label:'\u53bb\u584c\u65b9\u533a',cost:'\u5efa\u7acb\u4e34\u65f6\u8fc7\u6ee4\u8231\uff0c\u4f46\u65e0\u6cd5\u963b\u6b62\u5168\u90e8\u5c01\u95e8\u6216\u51b2\u5173\u3002'}] }); }
+        function chooseGateRoute(routeId) { if(state !== 'CH05_CHOICE' || !['seal_gate','break_blockade','deep_rock'].includes(routeId)) return; route=routeId; const screen=document.getElementById('story-choice-screen'); screen.classList.add('hidden'); screen.innerHTML=''; showDialogueId(`ch05.choice.${routeId}`); startEnding(routeId); }
+        function startEnding(routeId) { if(!gate09 || routeId !== route) return; state='ENDING_PLAY'; chapterFrame=0; entities.pjs=[]; entities.epjs=[]; entities.ens=[]; entities.missiles=[]; const rows={seal_gate:{ending:'empire',label:'MEDICAL SUPPLY',kind:'supply',tasks:['weapon','weapon','weapon']},break_blockade:{ending:'rebel',label:'EVAC CONVOY',kind:'convoy',tasks:['lock','lock','lock']},deep_rock:{ending:'deep_rock',label:'TEMP FILTER',kind:'filter',tasks:['core','core','blackbox']}}[routeId]; gate09.ending=rows.ending; gate09.objectiveLabel=rows.label; gate09.targets=[new GateObjective(rows.kind,rows.label,canvas.width/2,canvas.height*.3,170),...rows.tasks.map((kind,i)=>new GateObjective(kind,`${kind.toUpperCase()} ${i+1}`,canvas.width*(.3+i*.2),canvas.height*(kind==='core'?.42:.16),100))]; showDialogueId(`ending.${rows.ending}.intro`); spawnEndingEnemies(); updateGate09Hud(); }
+        function spawnEndingEnemies() { if(!gate09 || state !== 'ENDING_PLAY') return; for(let i=0;i<(route==='deep_rock'?3:4);i++) { const enemy=new Enemy(i===3?'elite':'scout'); enemy.type=i%2?'ch05_rust':'ch05_drone'; entities.ens.push(enemy); } }
+        function gateObjectiveText() { const targets=gate09.targets||[]; const protector=targets[0]; const done=targets.slice(1).filter(target=>target.done).length; return `${gate09.objectiveLabel} ${Math.ceil(protector.hp/protector.maxHp*100)}% // TARGETS ${done}/${Math.max(0,targets.length-1)}`; }
+        function finishEnding() { if(!gate09 || state!=='ENDING_PLAY') return; state='ENDING_RESULT'; showDialogueId(`ending.${gate09.ending}.result`); renderStoryChoice({channel:`ENDING // ${gate09.ending.toUpperCase()}`,quote:'Route objective complete. The consequences remain recorded.',situation:'Restart returns to deployment and clears this route.',choices:[{id:'restart',label:'REDEPLOY',cost:'Clear current route.'}]}); document.querySelector('[data-route="restart"]').onclick=()=>location.reload(); }
+        function failGate09() { if(state!=='CH05_PLAY' && state!=='ENDING_PLAY') return; state='CH05_FAILED'; document.querySelector('.rogue-title').innerText='GATE 09 FAILED // EVACUATION LOST'; document.getElementById('rogue-note').innerText='Retry preserves the selected pilot only.'; document.getElementById('cards-container').innerHTML='<button onclick="restartGate09()">RETRY GATE 09</button>'; document.getElementById('rogue-screen').classList.remove('hidden'); }
+        window.restartGate09=function(){ document.getElementById('rogue-screen').classList.add('hidden'); if(player){player.hp=player.maxHp;player.x=player.tx=canvas.width/2;player.y=player.ty=canvas.height*.8;player.invuln=90;updatePlayerHpHud();} state='INTERLUDE';startChapterFive(narrativeRun); };
 
         function failChapterTwo() {
             if(state !== 'CH02_PLAY') return;
@@ -1602,6 +1667,7 @@
             rescuePod = null; rescueScanProgress = 0; openingFrame = 0;
             frame = 0; score = 0; chapterFrame = 0; boss = null; bossSpawned = false; chapterCleared = false; wavesSpawned = 0; enemiesDestroyed = 0; lastEliteIndex = -1;
             chapter = 1; route = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0;
+            gate09 = null;
             bgScrollY = 0;
             generateBackground();
             bossDialogueLock = false; bossCrash = null; endingStarted = false;
@@ -1619,6 +1685,9 @@
             document.getElementById('comm-pilot').innerText = '未部署';
             document.getElementById('comm-ability').innerText = '主动技能：准备中';
             document.getElementById('comm-text').innerText = '信号压低。A 区有断续搜救信标，先确认目标，再开火。';
+            const storyChoice = document.getElementById('story-choice-screen');
+            storyChoice.classList.add('hidden');
+            storyChoice.innerHTML = '';
         }
 
         function updateChapterOneOpeningHud() {
@@ -1877,6 +1946,52 @@
             state = 'PLAYING';
         }
 
+        function updateGateCombat() {
+            if(!gate09 || !player) return;
+            chapterFrame++;
+            if(state === 'CH05_PLAY' && gate09.waves < CHAPTER_FIVE.targetWaves && entities.ens.length === 0 && chapterFrame % CHAPTER_FIVE.waveIntervalFrames === 0) spawnGateWave();
+            if(state === 'ENDING_PLAY' && entities.ens.length === 0 && chapterFrame % 140 === 0 && !gate09.targets.every(target => target.done || ['supply', 'convoy', 'filter'].includes(target.kind))) spawnEndingEnemies();
+            const protectedTarget = state === 'CH05_PLAY' ? gate09.shelter : gate09.targets.find(target => ['supply', 'convoy', 'filter'].includes(target.kind));
+            gate09.shelter.update();
+            (gate09.targets || []).forEach(target => target.update());
+            entities.ens.forEach(enemy => {
+                enemy.update();
+                entities.pjs.forEach((projectile, index) => {
+                    if(!enemy.dead && !projectile.hit.has(enemy) && projectileHits(projectile, enemy)) {
+                        enemy.hp -= projectile.dmg; projectile.hit.add(enemy); explode(projectile.x, projectile.y, projectile.c);
+                        if(!projectile.p) entities.pjs.splice(index, 1);
+                        if(enemy.hp <= 0) killEnemy(enemy);
+                    }
+                });
+                entities.missiles.forEach((missile, index) => {
+                    if(!enemy.dead && Math.hypot(missile.x - enemy.x, missile.y - enemy.y) < enemy.r + missile.r) { enemy.hp -= missile.dmg; entities.missiles.splice(index, 1); if(enemy.hp <= 0) killEnemy(enemy); }
+                });
+                if(!enemy.dead && protectedTarget && Math.hypot(enemy.x - protectedTarget.x, enemy.y - protectedTarget.y) < enemy.r + protectedTarget.r) { protectedTarget.damage(enemy.damage); enemy.dead = true; explode(enemy.x, enemy.y, '#ff8a5c'); }
+                else if(!enemy.dead && Math.hypot(player.x - enemy.x, player.y - enemy.y) < player.r + enemy.r) player.damage(enemy.damage);
+            });
+            if(state === 'ENDING_PLAY') {
+                (gate09.targets || []).forEach(target => {
+                    entities.pjs.forEach((projectile, index) => {
+                        if(!target.done && projectileHits(projectile, target) && target.damage(projectile.dmg) && !projectile.p) entities.pjs.splice(index, 1);
+                    });
+                });
+            }
+            entities.epjs.forEach((bullet, index) => {
+                bullet.update();
+                if(protectedTarget && Math.hypot(bullet.x - protectedTarget.x, bullet.y - protectedTarget.y) < bullet.r + protectedTarget.r) { protectedTarget.damage(bullet.dmg); entities.epjs.splice(index, 1); }
+                else if(Math.hypot(player.x - bullet.x, player.y - bullet.y) < player.r + bullet.r) { player.damage(bullet.dmg); entities.epjs.splice(index, 1); }
+            });
+            entities.pjs.forEach(projectile => projectile.update()); entities.missiles.forEach(missile => missile.update()); entities.particles.forEach(particle => particle.update()); player.update();
+            entities.ens = entities.ens.filter(enemy => enemy.hp > 0 && !enemy.dead); entities.pjs = entities.pjs.filter(projectile => projectile.y > -220 && projectile.y < canvas.height + 80); entities.epjs = entities.epjs.filter(bullet => bullet.y < canvas.height + 80); entities.missiles = entities.missiles.filter(missile => missile.life > 0); entities.particles = entities.particles.filter(particle => particle.a > 0);
+            if(protectedTarget && protectedTarget.hp <= 0) failGate09();
+            if(state === 'CH05_PLAY' && gate09.waves === CHAPTER_FIVE.targetWaves && entities.ens.length === 0 && entities.epjs.length === 0) showGateChoice();
+            if(state === 'ENDING_PLAY') {
+                const tasks = gate09.targets.filter(target => !['supply', 'convoy', 'filter'].includes(target.kind));
+                if(tasks.every(target => target.done) && entities.ens.length === 0) finishEnding();
+            }
+            updateGate09Hud();
+        }
+
         function loop() {
             if(state==='MENU') return;
             requestAnimationFrame(loop); frame++;
@@ -2089,6 +2204,8 @@
                 if(chapterTwoWaves === CHAPTER_TWO.targetWaves && scansCollected === CHAPTER_TWO.scanTargets && entities.ens.length === 0 && entities.epjs.length === 0) {
                     finishChapterTwoInvestigation();
                 }
+            } else if(state === 'CH05_PLAY' || state === 'ENDING_PLAY') {
+                updateGateCombat();
             } else if (state === 'BOSS_CRASH') {
                 if(bossCrash) {
                     const done = bossCrash.update();
@@ -2150,8 +2267,8 @@
             loop();
         };
 
-        window.onmousemove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.clientX; player.ty=e.clientY; }};
-        window.ontouchmove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.touches[0].clientX; player.ty=e.touches[0].clientY-60; e.preventDefault();} };
+        window.onmousemove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH05_PLAY' || state==='ENDING_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.clientX; player.ty=e.clientY; }};
+        window.ontouchmove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH05_PLAY' || state==='ENDING_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.touches[0].clientX; player.ty=e.touches[0].clientY-60; e.preventDefault();} };
         window.onkeydown = e => { if(e.code === 'Space' && player) player.useAbility(); };
         window.ondblclick = () => { if(player) player.useAbility(); };
 
