@@ -1638,7 +1638,7 @@
             enemiesDestroyed = 0; chapterCleared = false; boss = null; bossSpawned = false; route = null;
             updateLoadoutHud();
         }
-        window.restartGate09=function(){ document.getElementById('rogue-screen').classList.add('hidden'); resetGate09Build(); if(player){player.maxHp=PILOTS[pKey].maxHp;player.hp=player.maxHp;player.exp=0;player.lvl=0;player.maxExp=5;player.abilityCharge=0;player.abilityActive=false;player.x=player.tx=canvas.width/2;player.y=player.ty=canvas.height*.8;player.invuln=90;updatePlayerHpHud();updateAbilityHud();document.getElementById('exp-bar').style.width='0%';} state='INTERLUDE';startChapterFive(narrativeRun); };
+        window.restartGate09=function(){ document.getElementById('rogue-screen').classList.add('hidden'); resetGate09Build(); if(player){player.maxHp=PILOTS[pKey].maxHp;player.hp=player.maxHp;player.exp=0;player.lvl=1;player.maxExp=5;player.abilityCharge=0;player.abilityActive=false;player.x=player.tx=canvas.width/2;player.y=player.ty=canvas.height*.8;player.invuln=90;updatePlayerHpHud();updateAbilityHud();document.getElementById('exp-bar').style.width='0%';} state='INTERLUDE';startChapterFive(narrativeRun); };
 
         function failChapterTwo() {
             if(state !== 'CH02_PLAY') return;
