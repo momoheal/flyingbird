@@ -1976,7 +1976,8 @@
                 else if(!enemy.dead && Math.hypot(player.x - enemy.x, player.y - enemy.y) < player.r + enemy.r) player.damage(enemy.damage);
             });
             if(state === 'ENDING_PLAY') {
-                (gate09.targets || []).forEach(target => {
+                // The first target is protected by the player, never a player-fire target.
+                (gate09.targets || []).slice(1).forEach(target => {
                     entities.pjs.forEach((projectile, index) => {
                         if(!target.done && projectileHits(projectile, target) && target.damage(projectile.dmg) && !projectile.p) entities.pjs.splice(index, 1);
                     });
