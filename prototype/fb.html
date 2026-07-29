@@ -61,7 +61,6 @@
         .upgrade-card { background: rgba(13,24,29,.92); border: 1px solid #3c6672; width: 220px; padding: 18px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; color: #e9f7fa; box-shadow: 0 10px 22px rgba(0,0,0,.32); position: relative; overflow: hidden; }
         .upgrade-card::before { content: ""; position: absolute; inset: 0; background-image: var(--ui-frame); background-size: cover; background-position: center; opacity: .16; pointer-events: none; mix-blend-mode: screen; }
         .upgrade-card:hover { transform: translateY(-5px); border-color: #12b6d1; background: rgba(18,34,41,.96); box-shadow: 0 18px 30px rgba(0,0,0,.36);}
-        .branch-art { width: 58px; height: 58px; margin-bottom: 12px; background: center / contain no-repeat; flex: 0 0 58px; }
         .card-empire { border-top: 3px solid #33ccff; }
         .card-rebel { border-top: 3px solid #ff6600; }
         .card-type { font-size: 12px; color: #a9cbd3; margin-bottom: 10px; font-family: monospace; position: relative;}
@@ -304,14 +303,11 @@
         };
 
         let state = 'MENU';
+        const NARRATIVE_STATES = Object.freeze(['INTERLUDE', 'CH05_PLAY', 'CH05_CHOICE', 'ENDING_PLAY', 'ENDING_RESULT']);
         let frame = 0, score = 0, chapterFrame = 0;
         let pKey = 'alice';
         let bgScrollY = 0;
-        let chapter = 1, branch = null, scansCollected = 0, convoy = null, chapterTwoWaves = 0;
-        // Chapter 2 branch bosses deliberately live outside the Chapter 1 `boss` flow.
-        let chapterTwoBoss = null;
-        let chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
-        let chapterTwoVictory = null, chapterTwoOutroShown = false;
+        let chapter = 1, route = null, scansCollected = 0, convoy = null, chapterTwoWaves = 0;
         let player, boss = null, bossSpawned = false, chapterCleared = false, wavesSpawned = 0, enemiesDestroyed = 0, lastEliteIndex = -1;
         let rescuePod = null, rescueScanProgress = 0, openingFrame = 0, openingTimers = [];
         let bossDialogueLock = false;
@@ -683,13 +679,6 @@
             ctx.restore();
         }
 
-        function drawChapterTwoBossSprite(key, x, y, width, height) {
-            const sprite = SPRITES.ch02 && SPRITES.ch02.bosses[key];
-            if(!isLoaded(sprite)) return false;
-            drawReadableSprite(ctx, sprite, x - width / 2, y - height / 2, width, height);
-            return true;
-        }
-
         // --- 核心游戏类 ---
 
         class Player {
@@ -786,11 +775,10 @@
                     showToast('红移冲刺：无视碰撞，穿越敌阵');
                 } else if(pKey === 'bob') {
                     this.abilityActive = 120;
-                    const chapterTwoBossTarget = chapterTwoBoss && !chapterTwoBoss.defeated ? chapterTwoBoss : null;
-                    const targets = [...entities.ens, boss, chapterTwoBossTarget].filter(Boolean).slice(0, 12);
+                    const targets = [...entities.ens, boss].filter(Boolean).slice(0, 12);
                     targets.forEach(t => {
                         entities.missiles.push(new HomingMissile(this.x, this.y, t, '#33ccff', 125));
-                        if(t && t !== boss && t !== chapterTwoBossTarget) t.v.y *= 0.45;
+                        if(t && t !== boss) t.v.y *= 0.45;
                     });
                     showToast(`天穹追踪协议：锁定 ${targets.length} 个目标，敌机减速`);
                 } else {
@@ -856,9 +844,7 @@
         class Enemy {
             constructor(kind = 'scout', x = null) {
                 this.kind = kind;
-                this.type = chapter === 2
-                    ? (branch === 'protection' ? 'ch02_drone' : (branch === 'execute' ? 'ch02_interceptor' : 'rebel'))
-                    : 'rebel';
+                this.type = chapter === 2 ? 'ch02_interceptor' : 'rebel';
                 this.r = kind === 'elite' ? 30 : Math.random()*10+15;
                 this.x = Math.random()*(canvas.width-this.r*2)+this.r; this.y = -30;
                 if(x !== null) this.x = x;
@@ -1144,288 +1130,6 @@
                 ctx.save(); ctx.fillStyle='#ff6a32'; ctx.shadowBlur=10; ctx.shadowColor='#ff6a32';
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); ctx.restore();
             }
-        }
-
-        class ChapterTwoBossTarget {
-            constructor(owner, label, xOffset, yOffset, hp, color) {
-                this.owner = owner; this.label = label; this.xOffset = xOffset; this.yOffset = yOffset;
-                this.hp = hp; this.maxHp = hp; this.r = 19; this.color = color; this.active = true;
-                this.x = owner.x + xOffset; this.y = owner.y + yOffset;
-            }
-            update() {
-                this.x = this.owner.x + this.xOffset;
-                this.y = this.owner.y + this.yOffset;
-            }
-            damage(amount) {
-                if(!this.active) return false;
-                this.hp = Math.max(0, this.hp - amount);
-                if(this.hp === 0) this.active = false;
-                return true;
-            }
-            draw() {
-                if(!this.active) return;
-                ctx.save(); ctx.translate(this.x, this.y);
-                ctx.fillStyle = '#14171b'; ctx.strokeStyle = this.color; ctx.lineWidth = 2;
-                ctx.shadowColor = this.color; ctx.shadowBlur = 12;
-                ctx.beginPath(); ctx.arc(0, 0, this.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = this.color;
-                ctx.beginPath(); ctx.arc(0, 0, 7 + Math.sin(frame / 7) * 2, 0, Math.PI * 2); ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        class ChapterTwoBossPickup {
-            constructor(x, y, type, color) {
-                this.x = x; this.y = y; this.type = type; this.color = color; this.r = 14; this.life = 900; this.claimed = false;
-            }
-            update() {
-                this.life--;
-                this.y += Math.sin(frame / 18) * 0.3;
-                if(player && Math.hypot(player.x - this.x, player.y - this.y) < player.r + this.r) this.claim();
-                return this.life > 0 && !this.claimed;
-            }
-            claim() {
-                if(this.claimed) return;
-                this.claimed = true;
-                if(this.type === 'overcharge') chapterTwoBossBuff.overcharge = 540;
-                if(this.type === 'intercept') chapterTwoBossBuff.interceptReady = true;
-                showToast(this.type === 'overcharge' ? 'TEMP OVERCHARGE READY' : 'INTERCEPT CLEAR READY');
-            }
-            draw() {
-                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(frame / 35);
-                ctx.strokeStyle = this.color; ctx.fillStyle = 'rgba(10,13,16,.8)'; ctx.lineWidth = 2;
-                ctx.shadowColor = this.color; ctx.shadowBlur = 14;
-                ctx.beginPath(); ctx.rect(-this.r, -this.r, this.r * 2, this.r * 2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = this.color; ctx.fillRect(-4, -8, 8, 16);
-                ctx.restore();
-            }
-        }
-
-        class ChapterTwoBranchBoss {
-            constructor(config) {
-                this.config = config; this.x = canvas.width / 2; this.y = -150; this.r = 96;
-                this.hp = config.hp; this.maxHp = config.hp; this.phase = 1; this.fireCd = 90; this.pattern = 0;
-                this.defeated = false; this.introShown = false; this.phaseTwoShown = false;
-                this.targets = []; this.pickups = []; this.objective = ''; this.initializedPhases = new Set(); this.syncPhase();
-            }
-            update() {
-                if(this.defeated) return;
-                this.x += (canvas.width / 2 + Math.sin(frame / 84) * 140 - this.x) * 0.028;
-                this.y += (145 - this.y) * 0.035;
-                this.targets.forEach(target => target.update());
-                this.pickups = this.pickups.filter(pickup => { const alive = pickup.update(); if(alive) pickup.draw(); return alive; });
-                if(!this.introShown) { this.introShown = true; showDialogueId(this.config.dialogueRoot + '.intro'); }
-                if(--this.fireCd <= 0) { this.fireCd = Math.max(42, 98 - this.phase * 13); this.firePattern(); }
-                if(chapterTwoBossBuff.overcharge > 0) chapterTwoBossBuff.overcharge--;
-                this.draw();
-            }
-            syncPhase() {
-                const hpPct = this.hp / this.maxHp;
-                const next = hpPct <= 0.33 ? 3 : hpPct <= 0.66 ? 2 : 1;
-                this.phase = next;
-                if(this.initializedPhases.has(next)) return;
-                this.initializedPhases.add(next);
-                this.targets = this.config.makeTargets(this, next);
-                this.objective = this.config.objectives[next - 1];
-                if(next === 2 && !this.phaseTwoShown) {
-                    this.phaseTwoShown = true;
-                    this.pickups.push(new ChapterTwoBossPickup(this.x, this.y + this.r + 36, this.config.pickupType, this.config.color));
-                    showDialogueId(this.config.dialogueRoot + '.phase2');
-                }
-            }
-            damage(projectile) {
-                if(this.defeated || !projectile) return false;
-                const damage = Math.max(1, projectile.dmg || 1) * chapterTwoPlayerDamageMultiplier();
-                const target = this.targets.find(node => node.active && projectileHits(projectile, node));
-                if(target) {
-                    target.damage(damage);
-                    explode(projectile.x, projectile.y, target.color);
-                    return true;
-                }
-                if(this.targets.some(node => node.active)) return false;
-                if(!projectileHits(projectile, this)) return false;
-                this.hp = Math.max(0, this.hp - damage);
-                explode(projectile.x, projectile.y, this.config.color);
-                this.syncPhase();
-                if(this.hp === 0) this.defeated = true;
-                return true;
-            }
-            firePattern() {
-                this.pattern = (this.pattern + 1) % 2;
-                const originY = this.y + this.r * 0.5;
-                if(this.pattern === 0) {
-                    const aim = Math.atan2((player ? player.y : canvas.height * 0.75) - originY, (player ? player.x : this.x) - this.x);
-                    const count = this.phase + 1;
-                    for(let i = 0; i < count; i++) {
-                        const angle = aim + (i - (count - 1) / 2) * 0.16;
-                        const bullet = new EnemyBullet(this.x, originY, 3);
-                        bullet.v.x = Math.cos(angle) * (2.3 + this.phase * 0.25); bullet.v.y = Math.sin(angle) * (2.3 + this.phase * 0.25);
-                        bullet.dmg = 9 + this.phase * 2; entities.epjs.push(bullet);
-                    }
-                } else {
-                    const lanes = 6 + this.phase;
-                    for(let i = 0; i < lanes; i++) {
-                        if(i === Math.floor(frame / 70) % lanes) continue;
-                        const bullet = new EnemyBullet(canvas.width * (i + .5) / lanes, originY, 2.5 + this.phase * .2);
-                        bullet.v.x = 0; bullet.dmg = 8 + this.phase * 2; entities.epjs.push(bullet);
-                    }
-                }
-            }
-            drawTethers(color, count) {
-                if(!convoy) return;
-                ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.shadowColor = color; ctx.shadowBlur = 12;
-                for(let i = 0; i < count; i++) {
-                    const fromX = this.x + (i - (count - 1) / 2) * 44;
-                    ctx.beginPath(); ctx.moveTo(fromX, this.y + this.r * .35);
-                    ctx.quadraticCurveTo((fromX + convoy.x) / 2, convoy.y - 95 + Math.sin(frame / 11 + i) * 12, convoy.x, convoy.y - convoy.r * .35);
-                    ctx.stroke();
-                }
-                ctx.restore();
-            }
-        }
-
-        class PurifierBoss extends ChapterTwoBranchBoss {
-            constructor() {
-                super({ hp: 12000, color: '#ff304f', pickupType: 'overcharge', dialogueRoot: 'ch02.rebel_boss',
-                    objectives: ['DESTROY 3 LOCK NODES', 'DISABLE GUN BATTERIES // CLAIM OVERCHARGE', 'EXPOSED CORE // BREAK FINAL LOCK'],
-                    makeTargets: (boss, phase) => phase === 1
-                        ? [-58, 0, 58].map((offset, i) => new ChapterTwoBossTarget(boss, 'Lock Node ' + (i + 1), offset, 18, 550, '#ff304f'))
-                        : phase === 2 ? [-54, 0, 54].map((offset, i) => new ChapterTwoBossTarget(boss, 'Gun Battery ' + (i + 1), offset, 38, 700, '#fff2ee'))
-                        : [new ChapterTwoBossTarget(boss, 'Final Lock Core', 0, 20, 1200, '#ffffff')] });
-            }
-            draw() {
-                this.drawTethers('#ff304f', this.phase === 3 ? 1 : 3);
-                if(drawChapterTwoBossSprite('purifier', this.x, this.y, 270, 150)) {
-                    this.targets.forEach(target => target.draw());
-                    return;
-                }
-                ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#45111c'; ctx.strokeStyle = '#fff2ee'; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.moveTo(-112, -22); ctx.lineTo(-48, -72); ctx.lineTo(72, -55); ctx.lineTo(118, 8); ctx.lineTo(66, 72); ctx.lineTo(-88, 54); ctx.closePath(); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = '#ff304f'; ctx.fillRect(-70, -16, 140, 18); ctx.fillStyle = '#ffffff'; ctx.fillRect(-24, 12, 48, 24); ctx.restore();
-                this.targets.forEach(target => target.draw());
-            }
-        }
-
-        class RunnerBoss extends ChapterTwoBranchBoss {
-            constructor() {
-                super({ hp: 11000, color: '#f17a32', pickupType: 'intercept', dialogueRoot: 'ch02.empire_boss',
-                    objectives: ['CUT 3 GRAPPLE ANCHORS', 'DISABLE BOARDING BATTERIES // CLAIM INTERCEPT', 'DESTROY ENGINE CORE'],
-                    makeTargets: (boss, phase) => phase === 1
-                        ? [-62, 0, 62].map((offset, i) => new ChapterTwoBossTarget(boss, 'Grapple Anchor ' + (i + 1), offset, 22, 500, '#f17a32'))
-                        : phase === 2 ? [-48, 48].map((offset, i) => new ChapterTwoBossTarget(boss, 'Boarding Battery ' + (i + 1), offset, 40, 780, '#ffbf72'))
-                        : [new ChapterTwoBossTarget(boss, 'Engine Core', 0, 22, 1300, '#fff0d5')] });
-            }
-            draw() {
-                this.drawTethers('#f17a32', this.phase === 3 ? 1 : 2);
-                if(drawChapterTwoBossSprite('runner', this.x, this.y, 250, 145)) {
-                    this.targets.forEach(target => target.draw());
-                    return;
-                }
-                ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#502719'; ctx.strokeStyle = '#ffbf72'; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.moveTo(-118, 5); ctx.lineTo(-54, -64); ctx.lineTo(84, -48); ctx.lineTo(120, 18); ctx.lineTo(38, 76); ctx.lineTo(-94, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = '#f17a32'; ctx.fillRect(-78, -10, 154, 16); ctx.fillStyle = '#ffbf72'; ctx.fillRect(-18, 15, 36, 29); ctx.restore();
-                this.targets.forEach(target => target.draw());
-            }
-        }
-
-        // Integration surface for the later branch-flow task. These functions are inert until that task calls them.
-        function startChapterTwoBoss(selectedBranch) {
-            const resolvedBranch = selectedBranch === 'protection' ? 'protection' : 'execute';
-            chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
-            chapterTwoBoss = resolvedBranch === 'protection' ? new PurifierBoss() : new RunnerBoss();
-            updateChapterTwoBossObjectives();
-            return chapterTwoBoss;
-        }
-
-        function startChapterTwoVictory() {
-            if(!chapterTwoBoss || !branch || chapterTwoVictory) return;
-            const bossSnapshot = { x: chapterTwoBoss.x, y: chapterTwoBoss.y, r: chapterTwoBoss.r, color: chapterTwoBoss.config.color };
-            chapterTwoBoss = null;
-            entities.ens = [];
-            entities.epjs = [];
-            chapterTwoVictory = { branch, frame: 0, boss: bossSnapshot, signal: 1 };
-            state = 'CH02_VICTORY';
-            showDialogueId(branch === 'protection' ? 'ch02.rebel_boss.defeat' : 'ch02.empire_boss.defeat');
-        }
-
-        function updateChapterTwoVictory() {
-            if(!chapterTwoVictory) return;
-            const victory = chapterTwoVictory;
-            victory.frame++;
-            const t = Math.min(1, victory.frame / 150);
-            const boss = victory.boss;
-            ctx.save();
-            if(victory.branch === 'protection') {
-                const beamAlpha = Math.max(0, 1 - t * 1.6);
-                ctx.strokeStyle = `rgba(255, 48, 79, ${beamAlpha})`;
-                ctx.lineWidth = 4;
-                ctx.shadowColor = '#ff304f'; ctx.shadowBlur = 16;
-                ctx.beginPath(); ctx.moveTo(boss.x - 32, boss.y + boss.r * .3); ctx.lineTo(convoy.x - 18, convoy.y - 42); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(boss.x + 32, boss.y + boss.r * .3); ctx.lineTo(convoy.x + 18, convoy.y - 42); ctx.stroke();
-                if(victory.frame < 55) {
-                    ctx.strokeStyle = '#fff2ee'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(convoy.x - 24, convoy.y - 50); ctx.lineTo(convoy.x + 24, convoy.y - 22); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(convoy.x + 24, convoy.y - 50); ctx.lineTo(convoy.x - 24, convoy.y - 22); ctx.stroke();
-                }
-                convoy.y -= 3.7;
-                convoy.x += Math.sin(victory.frame / 12) * .45;
-                convoy.draw();
-                ctx.fillStyle = 'rgba(128, 230, 245, .8)';
-                ctx.fillRect(convoy.x - 5, convoy.y + convoy.r * .75, 10, 34);
-            } else {
-                victory.signal = Math.max(0, 1 - t * 1.25);
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, 1 - t * .7);
-                if(!drawChapterTwoBossSprite('runner', boss.x, boss.y + victory.frame * 3.1, 250, 145)) {
-                    ctx.translate(boss.x, boss.y + victory.frame * 3.1);
-                    ctx.fillStyle = '#502719'; ctx.strokeStyle = '#ffbf72'; ctx.lineWidth = 3;
-                    ctx.beginPath(); ctx.moveTo(-118, 5); ctx.lineTo(-54, -64); ctx.lineTo(84, -48); ctx.lineTo(120, 18); ctx.lineTo(38, 76); ctx.lineTo(-94, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
-                }
-                ctx.restore();
-                convoy.draw();
-                ctx.strokeStyle = `rgba(128, 230, 245, ${victory.signal})`; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.arc(convoy.x, convoy.y, convoy.r + 18 + Math.sin(victory.frame / 7) * 5, 0, Math.PI * 2); ctx.stroke();
-            }
-            ctx.restore();
-            if(victory.frame >= 150) showChapterTwoOutro();
-        }
-
-        function updateChapterTwoBoss() {
-            if(!chapterTwoBoss || chapterTwoBoss.defeated) return;
-            chapterTwoBoss.update();
-            updateChapterTwoBossObjectives();
-        }
-
-        function damageChapterTwoBoss(projectile) {
-            if(!chapterTwoBoss) return false;
-            const hit = chapterTwoBoss.damage(projectile);
-            if(hit) updateChapterTwoBossObjectives();
-            return hit;
-        }
-
-        function isChapterTwoBossDefeated() { return !!chapterTwoBoss && chapterTwoBoss.defeated; }
-
-        function chapterTwoPlayerDamageMultiplier() {
-            return chapter === 2 && chapterTwoBossBuff.overcharge > 0 ? 2 : 1;
-        }
-
-        function useChapterTwoIntercept() {
-            if(state !== 'CH02_PLAY' || !chapterTwoBossBuff.interceptReady) return false;
-            const cleared = entities.epjs.length;
-            chapterTwoBossBuff.interceptReady = false;
-            entities.epjs = [];
-            if(player) explode(player.x, player.y, '#ffbf72');
-            showToast(`INTERCEPT CLEAR // ${cleared} HOSTILE ROUNDS REMOVED`);
-            updateAbilityHud();
-            updatePilotCommHud();
-            return true;
-        }
-
-        function updateChapterTwoBossObjectives() {
-            if(!chapterTwoBoss) return;
-            const remaining = chapterTwoBoss.targets.filter(target => target.active).length;
-            setMission(CHAPTER_TWO, `BOSS P${chapterTwoBoss.phase} // ${chapterTwoBoss.objective} // TARGETS ${remaining}`);
-            document.getElementById('comm-text').innerText = `分支交战目标：${chapterTwoBoss.objective}`;
         }
 
         class Boss {
@@ -1766,12 +1470,8 @@
             if(!player) return;
             const ready = player.abilityCharge >= 100;
             const abilityPill = document.getElementById('ability-pill');
-            const bossBonus = chapterTwoBossBuff.overcharge > 0
-                ? ` // OVERCHARGE x2 ${Math.ceil(chapterTwoBossBuff.overcharge / 60)}s`
-                : (chapterTwoBossBuff.interceptReady ? ' // INTERCEPT READY' : '');
             document.getElementById('ability-pill').innerText = `${PILOTS[pKey].ability}：${ready ? '就绪' : Math.floor(player.abilityCharge) + '%'} // 空格/双击触发`;
-            abilityPill.innerText += bossBonus;
-            abilityPill.style.color = chapterTwoBossBuff.overcharge > 0 ? '#ff8fa1' : (chapterTwoBossBuff.interceptReady || ready ? '#fff18a' : '#89f7ff');
+            abilityPill.style.color = ready ? '#fff18a' : '#89f7ff';
         }
 
         function updateBossHud() {
@@ -1801,17 +1501,12 @@
             chapter = 2;
             bgScrollY = 0;
             generateBackground();
-            branch = null;
             scansCollected = 0;
             chapterTwoWaves = 0;
             chapterFrame = 0;
             boss = null;
             bossSpawned = false;
             bossCrash = null;
-            chapterTwoBoss = null;
-            chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
-            chapterTwoVictory = null;
-            chapterTwoOutroShown = false;
             entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
             convoy = new ConvoyHauler();
             state = 'CH02_PLAY';
@@ -1839,57 +1534,33 @@
         }
 
         function ensureChapterTwoScanBeacon() {
-            if(chapter !== 2 || branch || scansCollected >= CHAPTER_TWO.scanTargets) return;
+            if(chapter !== 2 || scansCollected >= CHAPTER_TWO.scanTargets) return;
             if(chapterTwoWaves === 0 || entities.scanBeacons.some(beacon => !beacon.collected)) return;
             entities.scanBeacons.push(new ScanBeacon());
         }
 
-        function showChapterTwoChoice() {
-            if(state !== 'CH02_PLAY' || branch) return;
-            state = 'CH02_CHOICE';
-            showDialogueId('ch02.choice.order');
-            document.querySelector('.rogue-title').innerText = 'CONVOY_DECISION // B 区航线';
-            document.getElementById('rogue-note').innerText = '扫描记录确认货船载有平民。选择会立刻写入任务记录。';
-            document.getElementById('cards-container').innerHTML = `
-                <div class="upgrade-card card-rebel" onclick="chooseBranch('protection')" style="--ui-frame:url(${ASSET_PATHS.ui.moduleFrame})">
-                    <div class="branch-art" style="background-image:url(${ASSET_PATHS.ch02.ui.protect})"></div>
-                    <div class="card-type">[护航]</div>
-                    <div class="card-name">Protection</div>
-                    <div class="card-desc">维持护航编队，带货船穿过碎石航道。后果：失去巡逻队信任。</div>
-                </div>
-                <div class="upgrade-card card-empire" onclick="chooseBranch('execute')" style="--ui-frame:url(${ASSET_PATHS.ui.moduleFrame})">
-                    <div class="branch-art" style="background-image:url(${ASSET_PATHS.ch02.ui.execute})"></div>
-                    <div class="card-type">[封锁]</div>
-                    <div class="card-name">Execute</div>
-                    <div class="card-desc">交出货船坐标并接受巡逻队登检。后果：获得巡逻队通行许可。</div>
-                </div>`;
-            document.getElementById('rogue-screen').classList.remove('hidden');
+        function finishChapterTwoInvestigation() {
+            if(state !== 'CH02_PLAY') return;
+            state = 'INTERLUDE';
+            showDialogueId('ch02.outro.' + pKey);
+            showTransition('BLACKBOX_RECOVERED', '货单、生命读数和注销名单已写入离线黑匣。第 09 隔离关口发来塌方警报。', 2800, startInterlude);
         }
 
-        window.chooseBranch = function(nextBranch) {
-            if(branch || state !== 'CH02_CHOICE') return;
-            branch = nextBranch === 'protection' ? 'protection' : 'execute';
-            const branchEnemyType = branch === 'protection' ? 'ch02_drone' : 'ch02_interceptor';
-            entities.ens.forEach(enemy => { enemy.type = branchEnemyType; });
-            document.getElementById('rogue-screen').classList.add('hidden');
-            showDialogueId(branch === 'protection' ? 'ch02.choice.rebel' : 'ch02.choice.empire');
-            startChapterTwoBoss(branch);
-            state = 'CH02_PLAY';
-        };
+        function startInterlude() {
+            state = 'INTERLUDE';
+            showDialogueId('interlude.rust');
+            showToast('RUST RISK // coolant-contaminated corrosion is spreading below the sealed gate');
+            setTimeout(() => {
+                showDialogueId('interlude.location');
+                showToast('BOB UNAUTHORIZED LOCATION PACKET // collapsed sector coordinates received');
+            }, 1700);
+            setTimeout(startChapterFive, 3600);
+        }
 
-        function showChapterTwoOutro() {
-            if(chapterTwoOutroShown || !branch || !chapterTwoVictory) return;
-            chapterTwoOutroShown = true;
-            state = 'CH02_OUTRO';
-            const protectedConvoy = branch === 'protection';
-            document.querySelector('.rogue-title').innerText = protectedConvoy
-                ? 'CHAPTER_TWO_COMPLETE // 跃迁窗口已打开'
-                : 'CHAPTER_TWO_COMPLETE // 封锁航线已稳定';
-            document.getElementById('rogue-note').innerText = protectedConvoy
-                ? '最后一束封锁光已熄灭，货船正在跃迁离场。第三章预告：救援浮标指向前进基地外环的地下航道。'
-                : 'Runner 已撤回封锁线，货船信号正在淡出。第三章预告：巡逻许可将把你送入前进基地的内侧监听网。';
-            document.getElementById('cards-container').innerHTML = '<button onclick="restartRun()">重新开始完整任务</button>';
-            document.getElementById('rogue-screen').classList.remove('hidden');
+        function startChapterFive() {
+            state = 'CH05_PLAY';
+            showDialogueId('ch05.intro');
+            showTransition('GATE_09', '第 09 隔离关口：避难所外环正在坍塌。', 1200);
         }
 
         function failChapterTwo() {
@@ -1921,11 +1592,9 @@
             openingTimers = [];
             rescuePod = null; rescueScanProgress = 0; openingFrame = 0;
             frame = 0; score = 0; chapterFrame = 0; boss = null; bossSpawned = false; chapterCleared = false; wavesSpawned = 0; enemiesDestroyed = 0; lastEliteIndex = -1;
-            chapter = 1; branch = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0;
+            chapter = 1; route = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0;
             bgScrollY = 0;
             generateBackground();
-            chapterTwoBoss = null; chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
-            chapterTwoVictory = null; chapterTwoOutroShown = false;
             bossDialogueLock = false; bossCrash = null; endingStarted = false;
             combatBarkCooldown = 0;
             entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
@@ -2102,11 +1771,6 @@
             const info = PILOTS[pKey];
             document.getElementById('comm-pilot').innerText = info.name;
             document.getElementById('comm-ability').innerText = `主动技能：${info.ability} // ${player.abilityCharge >= 100 ? '就绪' : Math.floor(player.abilityCharge) + '%'}`;
-            if(chapterTwoBossBuff.overcharge > 0) {
-                document.getElementById('comm-ability').innerText += ` // OVERCHARGE x2 ${Math.ceil(chapterTwoBossBuff.overcharge / 60)}s`;
-            } else if(chapterTwoBossBuff.interceptReady) {
-                document.getElementById('comm-ability').innerText += ' // INTERCEPT READY';
-            }
             document.getElementById('comm-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
             const commAvatar = document.getElementById('comm-pilot-avatar');
             const hudPortrait = SPRITES.portraits && SPRITES.portraits[pKey];
@@ -2343,20 +2007,18 @@
                 entities.particles = entities.particles.filter(p=>p.a>0);
             } else if(state === 'CH02_PLAY') {
                 chapterFrame++;
-                const chapterTwoBossActive = !!chapterTwoBoss && !isChapterTwoBossDefeated();
-                if(!chapterTwoBossActive && !branch && chapterTwoWaves < CHAPTER_TWO.targetWaves && chapterFrame % CHAPTER_TWO.waveIntervalFrames === 0) {
+                if(chapterTwoWaves < CHAPTER_TWO.targetWaves && chapterFrame % CHAPTER_TWO.waveIntervalFrames === 0) {
                     spawnChapterTwoWave();
                 }
 
                 drawChapterTwoScanCorridor();
                 convoy.update();
-                if(chapterTwoBossActive) updateChapterTwoBoss();
                 entities.ens.forEach((e, i) => {
                     e.update();
                     entities.pjs.forEach((pj, j) => {
                         if(e.dead || pj.hit.has(e)) return;
                         if(projectileHits(pj, e)) {
-                            e.hp -= pj.dmg * chapterTwoPlayerDamageMultiplier();
+                            e.hp -= pj.dmg;
                             pj.hit.add(e);
                             explode(pj.x, pj.y, pj.c);
                             showPierceFeedback(pj);
@@ -2367,7 +2029,7 @@
                     entities.missiles.forEach((m, j) => {
                         if(e.dead) return;
                         if(Math.hypot(m.x - e.x, m.y - e.y) < e.r + m.r) {
-                            e.hp -= m.dmg * chapterTwoPlayerDamageMultiplier();
+                            e.hp -= m.dmg;
                             explode(m.x, m.y, m.c);
                             entities.missiles.splice(j, 1);
                             if(e.hp <= 0) killEnemy(e);
@@ -2394,28 +2056,15 @@
                 });
                 entities.epjs.forEach((b, i) => {
                     b.update();
-                    if(chapterTwoBossActive && Math.hypot(convoy.x - b.x, convoy.y - b.y) < convoy.r + b.r) {
+                    if(Math.hypot(convoy.x - b.x, convoy.y - b.y) < convoy.r + b.r) {
                         const destroyed = convoy.damage(b.dmg);
                         entities.epjs.splice(i, 1);
-                        updateChapterTwoBossObjectives();
                         if(destroyed) failChapterTwo();
                     } else if(Math.hypot(player.x - b.x, player.y - b.y) < player.r + b.r) {
                         player.damage(b.dmg);
                         entities.epjs.splice(i, 1);
                     }
                 });
-                if(chapterTwoBossActive) {
-                    entities.pjs.forEach((pj, j) => {
-                        if(!pj.p && pj.hit.size > 0) return;
-                        if(damageChapterTwoBoss(pj)) {
-                            if(!pj.p) entities.pjs.splice(j, 1);
-                        }
-                    });
-                    entities.missiles.forEach((m, j) => {
-                        if(damageChapterTwoBoss(m)) entities.missiles.splice(j, 1);
-                    });
-                    if(isChapterTwoBossDefeated()) startChapterTwoVictory();
-                }
                 entities.pjs.forEach(p => p.update());
                 entities.missiles.forEach(m => m.update());
                 entities.particles.forEach(p => p.update());
@@ -2428,13 +2077,9 @@
                 entities.scanBeacons = entities.scanBeacons.filter(beacon => !beacon.collected);
                 entities.heals = entities.heals.filter(h => !h.collected && h.life > 0);
                 entities.particles = entities.particles.filter(p => p.a > 0);
-                if(!chapterTwoBoss && !branch && chapterTwoWaves === CHAPTER_TWO.targetWaves && scansCollected === CHAPTER_TWO.scanTargets && entities.ens.length === 0) {
-                    showChapterTwoChoice();
+                if(chapterTwoWaves === CHAPTER_TWO.targetWaves && scansCollected === CHAPTER_TWO.scanTargets && entities.ens.length === 0 && entities.epjs.length === 0) {
+                    finishChapterTwoInvestigation();
                 }
-            } else if(state === 'CH02_VICTORY') {
-                updateChapterTwoVictory();
-                entities.particles.forEach(p => p.update());
-                entities.particles = entities.particles.filter(p => p.a > 0);
             } else if (state === 'BOSS_CRASH') {
                 if(bossCrash) {
                     const done = bossCrash.update();
@@ -2498,8 +2143,8 @@
 
         window.onmousemove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.clientX; player.ty=e.clientY; }};
         window.ontouchmove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.touches[0].clientX; player.ty=e.touches[0].clientY-60; e.preventDefault();} };
-        window.onkeydown = e => { if(e.code === 'Space' && player && !useChapterTwoIntercept()) player.useAbility(); };
-        window.ondblclick = () => { if(player && !useChapterTwoIntercept()) player.useAbility(); };
+        window.onkeydown = e => { if(e.code === 'Space' && player) player.useAbility(); };
+        window.ondblclick = () => { if(player) player.useAbility(); };
 
     </script>
 </body>
