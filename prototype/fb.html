@@ -287,17 +287,9 @@
                     interceptor: '../assets/ch02/enemy/sf_ch02_enemy_quarantine_interceptor_512.png',
                     drone: '../assets/ch02/enemy/sf_ch02_enemy_inspection_drone_512.png'
                 },
-                bosses: {
-                    purifier: '../assets/ch02/boss/sf_ch02_boss_purification_cruiser_2048.png',
-                    runner: '../assets/ch02/boss/sf_ch02_boss_convoy_runner_2048.png'
-                },
                 fx: {
                     beacon: '../assets/ch02/fx/sf_ch02_fx_distress_beacon_sheet_1024x512.png',
                     scan: '../assets/ch02/fx/sf_ch02_fx_quarantine_scan_sheet_1024x512.png'
-                },
-                ui: {
-                    protect: '../assets/ch02/ui/sf_ch02_ui_route_protect_256.png',
-                    execute: '../assets/ch02/ui/sf_ch02_ui_route_execute_256.png'
                 }
             }
         };
@@ -433,9 +425,7 @@
             SPRITES.ch02 = {
                 convoy: loadSprite(ASSET_PATHS.ch02.convoy),
                 enemies: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.enemies).map(([key, path]) => [key, loadSprite(path)])),
-                bosses: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.bosses).map(([key, path]) => [key, loadSprite(path)])),
-                fx: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.fx).map(([key, path]) => [key, loadSprite(path)])),
-                ui: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.ui).map(([key, path]) => [key, loadSprite(path)]))
+                fx: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.fx).map(([key, path]) => [key, loadSprite(path)]))
             };
             hydrateStaticArt();
         }

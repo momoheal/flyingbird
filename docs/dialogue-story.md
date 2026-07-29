@@ -60,33 +60,6 @@ dialogues:
   - id: ch02.scan.3
     speaker: 扫描官
     default: "扫描三：身份码被整批删除，逃生门从内部锁死。检疫井不是避难所。"
-  - id: ch02.choice.order
-    speaker: 指挥频道
-    default: "护航任务结束。把转运队交给检疫井，净化程序会自动接管。不要打开货舱。"
-  - id: ch02.choice.rebel
-    speaker: 护航频道
-    default: "有人打开了货舱。别问他们该不该被救，先把跃迁窗撑到最后一艘船通过。"
-  - id: ch02.choice.empire
-    speaker: 帝国巡逻队
-    default: "叛乱确认。关闭武器系统，接受净化接管。封锁阵列将在三十秒后启动。"
-  - id: ch02.rebel_boss.intro
-    speaker: 帝国封锁舰
-    default: "护航机拒绝移交货船。封锁舰已锁定跃迁窗口，牵引束正在收紧。"
-  - id: ch02.rebel_boss.phase2
-    speaker: 帝国封锁舰
-    default: "外层锁定束失效，改接发动机核心。货船跳不出去。"
-  - id: ch02.rebel_boss.defeat
-    speaker: 护航频道
-    default: "封锁舰断开牵引。最后一艘转运船通过跃迁窗，浮标把家属频道带走了。"
-  - id: ch02.empire_boss.intro
-    speaker: 叛军突击舰
-    default: "执行队正在逼近。抓钩已扣住货船，先切断你们的封锁线。"
-  - id: ch02.empire_boss.phase2
-    speaker: 叛军突击舰
-    default: "前方封锁加固，过载发动机核心。抓钩别松，强行拖船。"
-  - id: ch02.empire_boss.defeat
-    speaker: 帝国巡逻队
-    default: "叛军抓钩已脱离。封锁线恢复，货船的跃迁窗口已关闭。"
   - id: prologue.01
     speaker: "轨道管制"
     default: "坠毁船的求救灯还在闪，信号来自下层废料场。"
