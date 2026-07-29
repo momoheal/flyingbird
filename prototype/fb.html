@@ -1652,18 +1652,40 @@
             showToast('穿甲命中 // ARMOR PIERCED');
         }
 
+        function resolveDialoguePresentation(name) {
+            const pilotSpeakerKeys = { Alice: 'alice', Bob: 'bob', Charlie: 'charlie' };
+            const pilotKey = pilotSpeakerKeys[name];
+            if(pilotKey) {
+                return {
+                    localizedName: PILOTS[pilotKey].name,
+                    commSpeaker: PILOTS[pilotKey].name,
+                    portraitKey: pilotKey,
+                    fallbackLabel: PILOTS[pilotKey].name
+                };
+            }
+            if(name === 'REBEL_COMMANDER') {
+                return { localizedName: '叛军指挥官', commSpeaker: '未授权频道', portraitKey: 'rebel', fallbackLabel: 'REBEL' };
+            }
+            if(name === 'SYSTEM') {
+                return { localizedName: '指挥频道', commSpeaker: '指挥频道', portraitKey: 'command', fallbackLabel: 'SYS' };
+            }
+            if(name === 'PLAYER') {
+                return { localizedName: PILOTS[pKey].name, commSpeaker: PILOTS[pKey].name, portraitKey: pKey, fallbackLabel: PILOTS[pKey].name };
+            }
+            return { localizedName: name, commSpeaker: PILOTS[pKey].name, portraitKey: pKey, fallbackLabel: 'SYS' };
+        }
+
         function showDialogue(name, text) {
             const box = document.getElementById('dialogue-box');
             const avatar = document.getElementById('dialogue-avatar');
-            document.getElementById('dialogue-name').innerText = name;
-            const localizedName = name === 'REBEL_COMMANDER' ? '叛军指挥官' : (name === 'SYSTEM' ? '指挥频道' : (name === 'PLAYER' ? PILOTS[pKey].name : name));
-            document.getElementById('dialogue-name').innerText = localizedName;
-            const portraitKey = name === 'REBEL_COMMANDER' ? 'rebel' : (name === 'SYSTEM' ? 'command' : pKey);
+            const presentation = resolveDialoguePresentation(name);
+            document.getElementById('dialogue-name').innerText = presentation.localizedName;
+            const portraitKey = presentation.portraitKey;
             const portrait = portraitKey && SPRITES.portraits && SPRITES.portraits[portraitKey];
             const commAvatar = document.getElementById('comm-avatar');
             const commSpeaker = document.getElementById('comm-speaker');
             document.getElementById('comm-text').innerText = text;
-            commSpeaker.innerText = name === 'REBEL_COMMANDER' ? '未授权频道' : (name === 'SYSTEM' ? '指挥频道' : PILOTS[pKey].name);
+            commSpeaker.innerText = presentation.commSpeaker;
             if(isLoaded(portrait)) {
                 avatar.innerText = '';
                 avatar.style.backgroundImage = `url(${portrait.src})`;
@@ -1673,9 +1695,9 @@
                 commAvatar.style.backgroundImage = `url(${portrait.src})`;
             } else {
                 avatar.style.backgroundImage = '';
-                avatar.innerText = name === 'REBEL_COMMANDER' ? 'REBEL' : 'SYS';
+                avatar.innerText = presentation.fallbackLabel;
                 commAvatar.style.backgroundImage = '';
-                commAvatar.innerText = name === 'REBEL_COMMANDER' ? 'REBEL' : 'SYS';
+                commAvatar.innerText = presentation.fallbackLabel;
             }
             document.getElementById('dialogue-text').innerText = text;
             box.classList.add('show');
