@@ -1,2 +1,3 @@
 # Local visual-brainstorm sessions and transient server state.
 .superpowers/
+.worktrees/
