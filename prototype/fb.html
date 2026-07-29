@@ -302,6 +302,7 @@
         let chapter = 1, route = null, scansCollected = 0, convoy = null, chapterTwoWaves = 0;
         let player, boss = null, bossSpawned = false, chapterCleared = false, wavesSpawned = 0, enemiesDestroyed = 0, lastEliteIndex = -1;
         let rescuePod = null, rescueScanProgress = 0, openingFrame = 0, openingTimers = [];
+        let narrativeTimers = new Set(), narrativeRun = 0;
         let bossDialogueLock = false;
         let bossCrash = null;
         let endingStarted = false;
@@ -1445,15 +1446,17 @@
             }, 1500);
         }
 
-        function showTransition(title, text, duration = 900, onDone = null) {
+        function showTransition(title, text, duration = 900, onDone = null, timerGroup = null) {
             const screen = document.getElementById('transition-screen');
             document.getElementById('transition-title').innerText = title;
             document.getElementById('transition-text').innerText = text;
             screen.classList.add('show');
-            setTimeout(() => {
+            const timer = setTimeout(() => {
+                if(timerGroup) timerGroup.delete(timer);
                 screen.classList.remove('show');
                 if(onDone) onDone();
             }, duration);
+            if(timerGroup) timerGroup.add(timer);
         }
 
         function updateAbilityHud() {
@@ -1531,23 +1534,36 @@
 
         function finishChapterTwoInvestigation() {
             if(state !== 'CH02_PLAY') return;
+            const run = narrativeRun;
             state = 'INTERLUDE';
             showDialogueId('ch02.outro.' + pKey);
-            showTransition('BLACKBOX_RECOVERED', '货单、生命读数和注销名单已写入离线黑匣。第 09 隔离关口发来塌方警报。', 2800, startInterlude);
+            showTransition('BLACKBOX_RECOVERED', '货单、生命读数和注销名单已写入离线黑匣。第 09 隔离关口发来塌方警报。', 2800, () => {
+                if(run === narrativeRun && state === 'INTERLUDE') startInterlude(run);
+            }, narrativeTimers);
         }
 
-        function startInterlude() {
+        function scheduleNarrative(callback, delay, run = narrativeRun) {
+            const timer = setTimeout(() => {
+                narrativeTimers.delete(timer);
+                if(run === narrativeRun) callback();
+            }, delay);
+            narrativeTimers.add(timer);
+        }
+
+        function startInterlude(run = narrativeRun) {
+            if(run !== narrativeRun || state !== 'INTERLUDE') return;
             state = 'INTERLUDE';
             showDialogueId('interlude.rust');
             showToast('RUST RISK // coolant-contaminated corrosion is spreading below the sealed gate');
-            setTimeout(() => {
+            scheduleNarrative(() => {
                 showDialogueId('interlude.location');
                 showToast('BOB UNAUTHORIZED LOCATION PACKET // collapsed sector coordinates received');
-            }, 1700);
-            setTimeout(startChapterFive, 3600);
+            }, 1700, run);
+            scheduleNarrative(() => startChapterFive(run), 3600, run);
         }
 
-        function startChapterFive() {
+        function startChapterFive(run = narrativeRun) {
+            if(run !== narrativeRun || state !== 'INTERLUDE') return;
             state = 'CH05_PLAY';
             showDialogueId('ch05.intro');
             showTransition('GATE_09', '第 09 隔离关口：避难所外环正在坍塌。', 1200);
@@ -1580,6 +1596,9 @@
         function resetRun() {
             openingTimers.forEach(timer => clearTimeout(timer));
             openingTimers = [];
+            narrativeRun++;
+            narrativeTimers.forEach(timer => clearTimeout(timer));
+            narrativeTimers.clear();
             rescuePod = null; rescueScanProgress = 0; openingFrame = 0;
             frame = 0; score = 0; chapterFrame = 0; boss = null; bossSpawned = false; chapterCleared = false; wavesSpawned = 0; enemiesDestroyed = 0; lastEliteIndex = -1;
             chapter = 1; route = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0;
