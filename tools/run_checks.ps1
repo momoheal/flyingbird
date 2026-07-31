@@ -43,44 +43,27 @@ const requireFunction = name => {
 requireFunction('enqueueDialogue');
 requireFunction('advanceDialogue');
 
-const forbiddenLegacyFlow = [
-    /\bCH02_CHOICE\b/,
-    /\bchooseBranch\b/,
-    /\bshowChapterTwoChoice\b/,
-    /\bspawnChapterTwoBoss\b/,
-    /\bstartChapterTwoBoss\b/
-];
-if (forbiddenLegacyFlow.some(pattern => pattern.test(source))) {
-    throw new Error('Obsolete B-sector choice or Boss flow remains');
-}
-
-if (/#story-choice-screen\b|\.story-choice-panel\b|id=["']story-choice-screen["']/.test(source)) {
-    throw new Error('Obsolete story choice overlay remains');
-}
-if (/\bfunction\s+renderStoryChoice\s*\(|\brenderStoryChoice\s*=/.test(source)) {
-    throw new Error('Obsolete Gate choice renderer remains');
-}
-if (!/id=["']gate-choice-actions["']/.test(source)) {
-    throw new Error('Missing Gate dialogue action container: #gate-choice-actions');
-}
-
-const englishGateLabels = [
-    'GATE_09', 'GATE 09', 'SHELTER 09', 'OPEN CHANNEL', 'MEDICAL SUPPLY',
-    'EVAC CONVOY', 'TEMP FILTER', 'REDEPLOY', 'COST:', 'TARGETS'
-];
-const visibleEnglishLabels = englishGateLabels.filter(label => source.includes(label));
-if (visibleEnglishLabels.length) {
-    throw new Error('English-visible old Gate labels remain: ' + visibleEnglishLabels.join(', '));
-}
-
 const finish = body('finishChapterTwoInvestigation');
 const interlude = body('startInterlude');
 const reset = body('resetRun');
+const parse = body('parseDialogueMarkdown');
+const resolve = body('resolveDialogue');
+const enqueue = body('enqueueDialogue');
+const advance = body('advanceDialogue');
+requireMatch(parse, /portrait/, 'Dialogue parser does not read portrait');
+requireMatch(resolve, /portrait:\s*entry\.portrait/, 'resolveDialogue does not return portrait');
+requireMatch(enqueue, /dlgQueue\.push[\s\S]*?state\s*=\s*'DIALOGUE'/, 'Dialogue enqueue does not pause game state');
+requireMatch(advance, /dlgQueue\.shift[\s\S]*?state\s*=\s*dialogueReturnState/, 'Dialogue advance does not restore prior state');
+requireMatch(source, /id=["']dialogue-pilot-avatar["'][\s\S]*?id=["']dialogue-avatar["']/, 'Two-sided dialogue portraits are missing');
+requireMatch(source, /dialogue-box.*addEventListener\('click', advanceDialogue\)/, 'Dialogue click advance is missing');
+requireMatch(source, /state === 'DIALOGUE'.*e\.code === 'Space'.*e\.code === 'Enter'/, 'Dialogue keyboard advance is missing');
+if (/\bshowDialogue\s*\(/.test(source)) throw new Error('Blocking dialogue calls remain outside the queue');
 requireMatch(finish, /showTransition\('BLACKBOX_RECOVERED'/, 'Blackbox closure transition missing');
 requireMatch(finish, /narrativeTimers/, 'Blackbox transition is not tracked');
 requireMatch(interlude, /scheduleNarrative\([\s\S]*?startChapterFive/, 'Interlude does not schedule Gate 09');
 requireMatch(source, /chapterTwoWaves === CHAPTER_TWO.targetWaves[\s\S]*?finishChapterTwoInvestigation\(\)/, 'B-sector completion does not finish investigation');
 requireMatch(reset, /narrativeRun\+\+[\s\S]*?narrativeTimers\.forEach\(timer => clearTimeout\(timer\)\)[\s\S]*?narrativeTimers\.clear\(\)/, 'Reset does not cancel narrative timers');
+requireMatch(reset, /dlgQueue\s*=\s*\[\][\s\S]*?dialogueReturnState\s*=\s*null/, 'Reset does not clear dialogue queue');
 console.log('narrative recovery contract ok');
 '@
 

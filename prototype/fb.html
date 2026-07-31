@@ -46,13 +46,16 @@
 
         #dialogue-box {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 800px; 
-            background: rgba(12, 21, 27, 0.94); border: 1px solid #3c6672; border-left: 5px solid #12b6d1; padding: 18px;
-            display: flex; gap: 18px; box-shadow: 0 14px 34px rgba(0,0,0,.45); opacity: 0; transition: opacity 0.3s; pointer-events: auto; cursor: pointer; color: #e9f7fa;
+            background: rgba(12, 21, 27, 0.96); border: 1px solid #3c6672; border-left: 5px solid #12b6d1; padding: 14px;
+            display: grid; grid-template-columns: minmax(120px, 1fr) minmax(220px, 2.4fr) minmax(120px, 1fr); gap: 14px; box-shadow: 0 14px 34px rgba(0,0,0,.45); opacity: 0; transition: opacity 0.2s; pointer-events: none; cursor: pointer; color: #e9f7fa; z-index: 70;
         }
-        #dialogue-box.show { opacity: 0; pointer-events: none; }
-        #dialogue-avatar { width: 72px; height: 72px; flex: 0 0 72px; font-size: 13px; font-weight: 800; background: rgba(7,14,18,.8); border: 1px solid #3c6672; padding: 0; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; color: #a9cbd3; }
-        #dialogue-name { font-size: 14px; color: #80e6f5; margin-bottom: 5px; font-family: monospace; font-weight: 800;}
-        #dialogue-text { font-size: 16px; line-height: 1.6; color: #e9f7fa; font-family: monospace; text-shadow: none;}
+        #dialogue-box.show { opacity: 1; pointer-events: auto; }
+        .dialogue-party { display: flex; gap: 9px; align-items: center; min-width: 0; }
+        .dialogue-party.right { justify-content: flex-end; text-align: right; }
+        .dialogue-avatar { width: 64px; height: 64px; flex: 0 0 64px; font-size: 24px; font-weight: 800; background: rgba(7,14,18,.8); border: 1px solid #3c6672; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; color: #a9cbd3; background-size: cover; background-position: center; }
+        .dialogue-label { min-width: 0; font-size: 14px; color: #80e6f5; font-family: monospace; font-weight: 800; overflow-wrap: anywhere; }
+        #dialogue-text { font-size: 16px; line-height: 1.6; color: #e9f7fa; font-family: monospace; text-shadow: none; text-align: center; }
+        #dialogue-advance { color: #a9cbd3; font-size: 12px; text-align: center; margin-top: 7px; }
 
         #rogue-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6, 12, 17, 0.86); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; color: #e9f7fa; }
         .rogue-title { font-size: 30px; margin-bottom: 30px; letter-spacing: 5px; color: #f2fbfd; font-family: 'ZCOOL QingKe HuangYou';}
@@ -154,10 +157,14 @@
         </div>
         
         <div id="dialogue-box">
-            <div id="dialogue-avatar">SYS</div>
-            <div>
-                <div id="dialogue-name">SYS</div>
-                <div id="dialogue-text"></div>
+            <div class="dialogue-party">
+                <div id="dialogue-pilot-avatar" class="dialogue-avatar">◆</div>
+                <div id="dialogue-pilot-name" class="dialogue-label"></div>
+            </div>
+            <div><div id="dialogue-text"></div><div id="dialogue-advance">点击或按空格 / 回车继续</div></div>
+            <div class="dialogue-party right">
+                <div id="dialogue-name" class="dialogue-label"></div>
+                <div id="dialogue-avatar" class="dialogue-avatar">▣</div>
             </div>
         </div>
     </div>
@@ -332,15 +339,15 @@
         let entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
         let mods = { pierce: false, laser: false, shield: 0, spread: 0, haste: 1, magnet: 40, armor: 0 };
         let cargo = [], equippedRogue = {}, salvage = 0, dropsGiven = 0;
-        let dlgQueue = [], typeTimer;
+        let dlgQueue = [], dialogueReturnState = null;
         let dialogueEntries = new Map();
         let dialogueSourceLoaded = false;
         let dialogueLoadPromise = null;
         let dialogueLoadWarned = false;
         const FALLBACK_DIALOGUE_ENTRIES = new Map([
-            ['ch01.deploy', { speaker: '指挥频道', default: '战机已离港。穿过小行星带，清除叛军拦截艇。', pilots: {} }],
-            ['ch01.boss_intro', { speaker: '叛军指挥官', default: '你们赶得太晚。货船和航道，现在都归我。', pilots: {} }],
-            ['ch01.debrief', { speaker: '指挥频道', default: '航母已失能。回收残骸，立刻返回前进基地。', pilots: {} }]
+            ['ch01.deploy', { speaker: '指挥频道', portrait: 'command', default: '战机已离港。穿过小行星带，清除叛军拦截艇。', pilots: {} }],
+            ['ch01.boss_intro', { speaker: '叛军指挥官', portrait: 'rebel', default: '你们赶得太晚。货船和航道，现在都归我。', pilots: {} }],
+            ['ch01.debrief', { speaker: '指挥频道', portrait: 'command', default: '航母已失能。回收残骸，立刻返回前进基地。', pilots: {} }]
         ]);
         const SPRITES = {};
 
@@ -360,7 +367,7 @@
                 let match = line.match(/^\s*-\s+id:\s*([^\s#]+)\s*$/);
                 if(match) {
                     if(entries.has(match[1])) throw new Error(`Duplicate dialogue id: ${match[1]}`);
-                    entry = { speaker: '', default: '', pilots: {} };
+                    entry = { speaker: '', portrait: '', default: '', pilots: {} };
                     entries.set(match[1], entry);
                     inPilots = false;
                     continue;
@@ -378,6 +385,12 @@
                     inPilots = false;
                     continue;
                 }
+                match = line.match(/^\s{4}portrait:\s*(.+)$/);
+                if(match) {
+                    entry.portrait = readScalar(match[1]);
+                    inPilots = false;
+                    continue;
+                }
                 if(/^\s{4}pilots:\s*$/.test(line)) {
                     inPilots = true;
                     continue;
@@ -387,7 +400,7 @@
             }
 
             for(const [id, parsed] of entries) {
-                if(!parsed.speaker || !parsed.default) throw new Error(`Incomplete dialogue entry: ${id}`);
+                if(!parsed.speaker || !parsed.portrait || !parsed.default) throw new Error(`Incomplete dialogue entry: ${id}`);
             }
             if(!entries.size) throw new Error('No dialogue entries found');
             return entries;
@@ -417,14 +430,12 @@
 
         function resolveDialogue(id) {
             const entry = dialogueEntries.get(id);
-            if(!entry) return { speaker: 'SYSTEM', text: `[MISSING_DIALOGUE: ${id}]` };
-            const speaker = entry.speaker === '指挥频道' ? 'SYSTEM' : (entry.speaker === '叛军指挥官' ? 'REBEL_COMMANDER' : entry.speaker);
-            return { speaker, text: entry.pilots[pKey] || entry.default };
+            if(!entry) return { speaker: '系统提示', portrait: 'system', text: `缺少对话：${id}` };
+            return { speaker: entry.speaker, portrait: entry.portrait, text: entry.pilots[pKey] || entry.default };
         }
 
         function showDialogueId(id) {
-            const dialogue = resolveDialogue(id);
-            showDialogue(dialogue.speaker, dialogue.text);
+            enqueueDialogue(resolveDialogue(id));
         }
 
         function loadSprite(path) {
@@ -1124,7 +1135,7 @@
                     : ['别挡航线。', '我看见碎片了，继续推进。', '短点射，省弹。']
             };
             const pool = lines[pKey] || lines.alice;
-            showDialogue('PLAYER', pool[Math.floor(Math.random()*pool.length)]);
+            showCombatBark('PLAYER', pool[Math.floor(Math.random()*pool.length)]);
             combatBarkCooldown = kind === 'elite' ? 260 : 180;
         }
 
@@ -1157,7 +1168,7 @@
                 this.protectTimer--;
                 if(this.protectTimer <= 0) {
                     this.protectTimer = 260;
-                    showDialogue('REBEL_COMMANDER', bossProtectLine());
+                    showCombatBark('REBEL_COMMANDER', bossProtectLine());
                     this.guardBurst();
                 }
                 this.maneuverTimer--;
@@ -1311,7 +1322,7 @@
                 }
                 ctx.restore();
                 if(this.t % 10 === 0) explode(this.x + (Math.random()-0.5)*220, this.y + (Math.random()-0.5)*80, '#ff7a2c');
-                if(this.t === 30) showDialogue('SYSTEM', '目标动力炉断连。残骸正在偏离逃生舱航线。');
+                if(this.t === 30) showCombatBark('SYSTEM', '目标动力炉断连。残骸正在偏离逃生舱航线。');
                 return this.t > 190;
             }
         }
@@ -1369,35 +1380,53 @@
             showToast('穿甲命中 // ARMOR PIERCED');
         }
 
-        function resolveDialoguePresentation(name) {
-            const pilotSpeakerKeys = {
-                Alice: 'alice',
-                爱丽丝: 'alice',
-                爱丽斯: 'alice',
-                Bob: 'bob',
-                鲍勃: 'bob',
-                Charlie: 'charlie',
-                查理: 'charlie'
-            };
-            const pilotKey = pilotSpeakerKeys[name];
-            if(pilotKey) {
-                return {
-                    localizedName: PILOTS[pilotKey].name,
-                    commSpeaker: PILOTS[pilotKey].name,
-                    portraitKey: pilotKey,
-                    fallbackLabel: PILOTS[pilotKey].name
-                };
+        function resolveDialoguePresentation(name, portrait = '') {
+            const legacyPortraits = { PLAYER: pKey, SYSTEM: 'command', REBEL_COMMANDER: 'rebel' };
+            const portraitKey = portrait || legacyPortraits[name] || 'system';
+            const labels = { quartermaster: '📟', scanner: '🛰', mara: '🦋', system: '▣', command: '▣', rebel: '⚠' };
+            return { localizedName: name === 'PLAYER' ? PILOTS[pKey].name : name, portraitKey, fallbackLabel: labels[portraitKey] || '▣' };
+        }
+
+        function setDialoguePortrait(element, portraitKey, fallbackLabel) {
+            const portrait = portraitKey && SPRITES.portraits && SPRITES.portraits[portraitKey];
+            if(isLoaded(portrait)) { element.innerText = ''; element.style.backgroundImage = `url(${portrait.src})`; }
+            else { element.style.backgroundImage = ''; element.innerText = fallbackLabel; }
+        }
+
+        function renderDialogue(dialogue) {
+            const speaker = resolveDialoguePresentation(dialogue.speaker, dialogue.portrait);
+            const pilot = resolveDialoguePresentation(PILOTS[pKey].name, pKey);
+            document.getElementById('dialogue-name').innerText = speaker.localizedName;
+            document.getElementById('dialogue-pilot-name').innerText = PILOTS[pKey].name;
+            document.getElementById('dialogue-text').innerText = dialogue.text;
+            setDialoguePortrait(document.getElementById('dialogue-avatar'), speaker.portraitKey, speaker.fallbackLabel);
+            setDialoguePortrait(document.getElementById('dialogue-pilot-avatar'), pilot.portraitKey, pilot.fallbackLabel);
+            document.getElementById('dialogue-box').classList.add('show');
+        }
+
+        function enqueueDialogue(dialogue) {
+            if(!dialogue || !dialogue.text) return;
+            dlgQueue.push(dialogue);
+            if(state !== 'DIALOGUE') {
+                dialogueReturnState = state;
+                state = 'DIALOGUE';
+                renderDialogue(dlgQueue[0]);
             }
-            if(name === 'REBEL_COMMANDER') {
-                return { localizedName: '叛军指挥官', commSpeaker: '未授权频道', portraitKey: 'rebel', fallbackLabel: 'REBEL' };
-            }
-            if(name === 'SYSTEM') {
-                return { localizedName: '指挥频道', commSpeaker: '指挥频道', portraitKey: 'command', fallbackLabel: 'SYS' };
-            }
-            if(name === 'PLAYER') {
-                return { localizedName: PILOTS[pKey].name, commSpeaker: PILOTS[pKey].name, portraitKey: pKey, fallbackLabel: PILOTS[pKey].name };
-            }
-            return { localizedName: name, commSpeaker: PILOTS[pKey].name, portraitKey: pKey, fallbackLabel: 'SYS' };
+        }
+
+        function advanceDialogue() {
+            if(state !== 'DIALOGUE') return false;
+            dlgQueue.shift();
+            if(dlgQueue.length) { renderDialogue(dlgQueue[0]); return true; }
+            document.getElementById('dialogue-box').classList.remove('show');
+            state = dialogueReturnState || 'MENU';
+            dialogueReturnState = null;
+            return true;
+        }
+
+        function setDialogueReturnState(nextState) {
+            if(state === 'DIALOGUE') dialogueReturnState = nextState;
+            else state = nextState;
         }
 
         class GateObjective {
@@ -1430,34 +1459,9 @@
             }
         }
 
-        function showDialogue(name, text) {
-            const box = document.getElementById('dialogue-box');
-            const avatar = document.getElementById('dialogue-avatar');
+        function showCombatBark(name, text) {
             const presentation = resolveDialoguePresentation(name);
-            document.getElementById('dialogue-name').innerText = presentation.localizedName;
-            const portraitKey = presentation.portraitKey;
-            const portrait = portraitKey && SPRITES.portraits && SPRITES.portraits[portraitKey];
-            const commAvatar = document.getElementById('comm-avatar');
-            const commSpeaker = document.getElementById('comm-speaker');
-            document.getElementById('comm-text').innerText = text;
-            commSpeaker.innerText = presentation.commSpeaker;
-            if(isLoaded(portrait)) {
-                avatar.innerText = '';
-                avatar.style.backgroundImage = `url(${portrait.src})`;
-                avatar.style.backgroundSize = 'cover';
-                avatar.style.backgroundPosition = 'center';
-                commAvatar.innerText = '';
-                commAvatar.style.backgroundImage = `url(${portrait.src})`;
-            } else {
-                avatar.style.backgroundImage = '';
-                avatar.innerText = presentation.fallbackLabel;
-                commAvatar.style.backgroundImage = '';
-                commAvatar.innerText = presentation.fallbackLabel;
-            }
-            document.getElementById('dialogue-text').innerText = text;
-            box.classList.add('show');
-            clearTimeout(box._timer);
-            box._timer = setTimeout(() => box.classList.remove('show'), 5200);
+            showToast(`${presentation.localizedName}：${text}`);
         }
 
         function bossProtectLine() {
@@ -1491,9 +1495,9 @@
             if(bossDialogueLock) return;
             bossDialogueLock = true;
             const exchange = bossPhaseExchange(phase);
-            showDialogue('REBEL_COMMANDER', exchange.boss);
+            showCombatBark('REBEL_COMMANDER', exchange.boss);
             setTimeout(() => {
-                showDialogue('PLAYER', exchange.pilot);
+                showCombatBark('PLAYER', exchange.pilot);
                 setTimeout(() => { bossDialogueLock = false; }, 1200);
             }, 1500);
         }
@@ -1590,7 +1594,7 @@
             state = 'INTERLUDE';
             showDialogueId('ch02.outro.' + pKey);
             showTransition('BLACKBOX_RECOVERED', '货单、生命读数和注销名单已写入离线黑匣。第 09 隔离关口发来塌方警报。', 2800, () => {
-                if(run === narrativeRun && state === 'INTERLUDE') startInterlude(run);
+                if(run === narrativeRun && (state === 'INTERLUDE' || dialogueReturnState === 'INTERLUDE')) startInterlude(run);
             }, narrativeTimers);
         }
 
@@ -1603,8 +1607,7 @@
         }
 
         function startInterlude(run = narrativeRun) {
-            if(run !== narrativeRun || state !== 'INTERLUDE') return;
-            state = 'INTERLUDE';
+            if(run !== narrativeRun || (state !== 'INTERLUDE' && dialogueReturnState !== 'INTERLUDE')) return;
             showDialogueId('interlude.rust');
             showToast('RUST RISK // coolant-contaminated corrosion is spreading below the sealed gate');
             scheduleNarrative(() => {
@@ -1615,11 +1618,11 @@
         }
 
         function startChapterFive(run = narrativeRun) {
-            if(run !== narrativeRun || state !== 'INTERLUDE') return;
+            if(run !== narrativeRun || (state !== 'INTERLUDE' && dialogueReturnState !== 'INTERLUDE')) return;
             chapter = 5; chapterFrame = 0;
             entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
             gate09 = { waves: 0, choiceShown: false, shelter: new GateObjective('shelter', 'SHELTER 09', canvas.width / 2, canvas.height * .27, CHAPTER_FIVE.shelterHp), targets: [] };
-            state = 'CH05_PLAY'; showDialogueId('ch05.intro'); updateGate09Hud();
+            setDialogueReturnState('CH05_PLAY'); showDialogueId('ch05.intro'); updateGate09Hud();
             showTransition('GATE_09', 'GATE 09 collapse alert', 1200, spawnGateWave);
         }
         function updateGate09Hud() { if(!gate09) return; const integrity = Math.ceil(gate09.shelter.hp / gate09.shelter.maxHp * 100); setMission(CHAPTER_FIVE, `WAVE ${gate09.waves}/${CHAPTER_FIVE.targetWaves} // ${state === 'ENDING_PLAY' ? gateObjectiveText() : `SHELTER ${integrity}%`}`); document.getElementById('comm-text').innerText = state === 'ENDING_PLAY' ? gateObjectiveText() : `SHELTER 09 integrity ${integrity}%`; }
@@ -1670,6 +1673,8 @@
             narrativeRun++;
             narrativeTimers.forEach(timer => clearTimeout(timer));
             narrativeTimers.clear();
+            dlgQueue = []; dialogueReturnState = null;
+            document.getElementById('dialogue-box').classList.remove('show');
             rescuePod = null; rescueScanProgress = 0; openingFrame = 0;
             frame = 0; score = 0; chapterFrame = 0; boss = null; bossSpawned = false; chapterCleared = false; wavesSpawned = 0; enemiesDestroyed = 0; lastEliteIndex = -1;
             chapter = 1; route = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0;
@@ -1712,15 +1717,16 @@
             openingTimers.push(setTimeout(() => showDialogueId('ch01.pilot_status'), 1100));
             openingTimers.push(setTimeout(() => showDialogueId('ch01.mission_brief'), 2900));
             openingTimers.push(setTimeout(() => showDialogueId('ch01.distress_signal'), 4700));
-            openingTimers.push(setTimeout(() => { rescuePod = new RescuePod(); state = 'CH01_RESCUE'; updateChapterOneOpeningHud(); }, 5200));
+            openingTimers.push(setTimeout(() => { rescuePod = new RescuePod(); setDialogueReturnState('CH01_RESCUE'); updateChapterOneOpeningHud(); }, 5200));
         }
 
         function finishChapterOneOpening() {
             openingTimers.forEach(timer => clearTimeout(timer)); openingTimers = [];
-            rescuePod = null; showDialogueId('ch01.rescue_order');
+            rescuePod = null;
             setMission(CHAPTER_ONE, `A 区小行星带 // 波次 0/${CHAPTER_ONE.targetWavesBeforeBoss}`);
             document.getElementById('comm-wave').innerText = `0/${CHAPTER_ONE.targetWavesBeforeBoss}`;
             chapterFrame = 0; state = 'PLAYING';
+            showDialogueId('ch01.rescue_order');
         }
 
         function updateChapterOneOpening() {
@@ -2115,7 +2121,7 @@
                         bossCrash = new BossCrash(boss);
                         boss = null;
                         state = 'BOSS_CRASH';
-                        showDialogue('SYSTEM', '战报开始上传：目标残骸正在下坠，航线后方的逃生舱已经脱离炮火。');
+                        showCombatBark('SYSTEM', '战报开始上传：目标残骸正在下坠，航线后方的逃生舱已经脱离炮火。');
                     }
                 }
 
@@ -2276,7 +2282,11 @@
 
         window.onmousemove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH05_PLAY' || state==='ENDING_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.clientX; player.ty=e.clientY; }};
         window.ontouchmove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH05_PLAY' || state==='ENDING_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.touches[0].clientX; player.ty=e.touches[0].clientY-60; e.preventDefault();} };
-        window.onkeydown = e => { if(e.code === 'Space' && player) player.useAbility(); };
+        document.getElementById('dialogue-box').addEventListener('click', advanceDialogue);
+        window.onkeydown = e => {
+            if(state === 'DIALOGUE' && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); advanceDialogue(); return; }
+            if(e.code === 'Space' && player) player.useAbility();
+        };
         window.ondblclick = () => { if(player) player.useAbility(); };
 
     </script>
