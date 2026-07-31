@@ -1,6 +1,7 @@
 param([switch]$RegenerateAssets)
 
 $ErrorActionPreference = "Stop"
+$OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 
 function Invoke-Native {
     param([scriptblock]$Command)
@@ -16,7 +17,7 @@ Write-Host "Workspace: $Root"
 
 Write-Host "`n[1/4] Checking prototype/fb.html syntax and narrative recovery contract..."
 Invoke-Native { node -e "const fs=require('fs'); const html=fs.readFileSync('prototype/fb.html','utf8'); const match=html.match(/<script>([\s\S]*)<\/script>/); if(!match) throw new Error('No <script> block found in prototype/fb.html'); new Function(match[1]); console.log('prototype/fb.html script syntax ok');" }
-Invoke-Native { node -e "const fs=require('fs'); const source=fs.readFileSync('prototype/fb.html','utf8'); const states=['INTERLUDE','CH05_PLAY','CH05_CHOICE','ENDING_PLAY','ENDING_RESULT']; const missing=states.filter(state=>!source.includes(state)); if(missing.length) throw new Error('Missing narrative states: '+missing.join(', ')); const body=name=>{const start=source.indexOf('function '+name+'('); if(start<0) throw new Error('Missing function: '+name); const open=source.indexOf('{',start); let depth=0; for(let i=open;i<source.length;i++){if(source[i]==='{')depth++; if(source[i]==='}'&&!--depth)return source.slice(open+1,i);} throw new Error('Unclosed function: '+name);}; const requireMatch=(value,pattern,message)=>{if(!pattern.test(value)) throw new Error(message);}; const finish=body('finishChapterTwoInvestigation'), interlude=body('startInterlude'), reset=body('resetRun'), gateRetry=body('resetGate09Build'); requireMatch(source,/let[^;]*\broute\s*=\s*null/, 'Missing route initialization'); requireMatch(reset,/route\s*=\s*null/, 'Missing route reset'); requireMatch(gateRetry,/route\s*=\s*null/, 'Gate 09 retry does not clear route'); ['mods =','cargo = []','equippedRogue = {}','salvage = 0','dropsGiven = 0'].forEach(value=>{if(!gateRetry.includes(value)) throw new Error('Gate 09 retry build reset missing: '+value);}); requireMatch(source,/window\.restartGate09=function\(\)\{[\s\S]*?player\.exp=0;player\.lvl=1;player\.maxExp=5;player\.abilityCharge=0;player\.abilityActive=false/, 'Gate 09 retry does not reset player progression'); requireMatch(finish,/showTransition\('BLACKBOX_RECOVERED'/, 'Blackbox closure transition missing'); requireMatch(finish,/narrativeTimers/, 'Blackbox transition is not tracked'); requireMatch(interlude,/scheduleNarrative\([\s\S]*?startChapterFive/, 'Interlude does not schedule Gate 09'); requireMatch(source,/chapterTwoWaves === CHAPTER_TWO.targetWaves[\s\S]*?finishChapterTwoInvestigation\(\)/, 'B-sector completion does not finish investigation'); requireMatch(reset,/narrativeRun\+\+[\s\S]*?narrativeTimers\.forEach\(timer => clearTimeout\(timer\)\)[\s\S]*?narrativeTimers\.clear\(\)/, 'Reset does not cancel narrative timers'); console.log('narrative structural and reset-timer guards ok');" }
+Invoke-Native { node -e "const fs=require('fs'); const source=fs.readFileSync('prototype/fb.html','utf8'); const states=['INTERLUDE','CH05_PLAY','CH05_CHOICE','ENDING_PLAY','ENDING_RESULT']; const missing=states.filter(state=>!source.includes(state)); if(missing.length) throw new Error('Missing narrative states: '+missing.join(', ')); const body=name=>{const start=source.indexOf('function '+name+'('); if(start<0) throw new Error('Missing function: '+name); const open=source.indexOf('{',start); let depth=0; for(let i=open;i<source.length;i++){if(source[i]==='{')depth++; if(source[i]==='}'&&!--depth)return source.slice(open+1,i);} throw new Error('Unclosed function: '+name);}; const requireMatch=(value,pattern,message)=>{if(!pattern.test(value)) throw new Error(message);}; const finish=body('finishChapterTwoInvestigation'), interlude=body('startInterlude'), reset=body('resetRun'), gateRetry=body('resetGate09Build'); requireMatch(source,/let[^;]*\broute\s*=\s*null/, 'Missing route initialization'); requireMatch(reset,/route\s*=\s*null/, 'Missing route reset'); requireMatch(gateRetry,/route\s*=\s*null/, 'Gate 09 retry does not clear route'); ['mods =','cargo = []','equippedRogue = {}','salvage = 0','dropsGiven = 0'].forEach(value=>{if(!gateRetry.includes(value)) throw new Error('Gate 09 retry build reset missing: '+value);}); requireMatch(source,/window\.restartGate09=function\(\)\{[\s\S]*?player\.exp=0;player\.lvl=1;player\.maxExp=5;player\.abilityCharge=0;player\.abilityActive=false/, 'Gate 09 retry does not reset player progression'); requireMatch(finish,/showTransition\('/, 'Blackbox closure transition missing'); requireMatch(finish,/narrativeTimers/, 'Blackbox transition is not tracked'); requireMatch(interlude,/scheduleNarrative\([\s\S]*?startChapterFive/, 'Interlude does not schedule Gate 09'); requireMatch(source,/chapterTwoWaves === CHAPTER_TWO.targetWaves[\s\S]*?finishChapterTwoInvestigation\(\)/, 'B-sector completion does not finish investigation'); requireMatch(reset,/narrativeRun\+\+[\s\S]*?narrativeTimers\.forEach\(timer => clearTimeout\(timer\)\)[\s\S]*?narrativeTimers\.clear\(\)/, 'Reset does not cancel narrative timers'); console.log('narrative structural and reset-timer guards ok');" }
 $NarrativeRecoveryContract = @'
 const fs = require('fs');
 const source = fs.readFileSync('prototype/fb.html', 'utf8');
@@ -58,12 +59,22 @@ requireMatch(source, /id=["']dialogue-pilot-avatar["'][\s\S]*?id=["']dialogue-av
 requireMatch(source, /dialogue-box.*addEventListener\('click', advanceDialogue\)/, 'Dialogue click advance is missing');
 requireMatch(source, /state === 'DIALOGUE'.*e\.code === 'Space'.*e\.code === 'Enter'/, 'Dialogue keyboard advance is missing');
 if (/\bshowDialogue\s*\(/.test(source)) throw new Error('Blocking dialogue calls remain outside the queue');
-requireMatch(finish, /showTransition\('BLACKBOX_RECOVERED'/, 'Blackbox closure transition missing');
+requireMatch(finish, /showTransition\('/, 'Blackbox closure transition missing');
 requireMatch(finish, /narrativeTimers/, 'Blackbox transition is not tracked');
 requireMatch(interlude, /scheduleNarrative\([\s\S]*?startChapterFive/, 'Interlude does not schedule Gate 09');
 requireMatch(source, /chapterTwoWaves === CHAPTER_TWO.targetWaves[\s\S]*?finishChapterTwoInvestigation\(\)/, 'B-sector completion does not finish investigation');
 requireMatch(reset, /narrativeRun\+\+[\s\S]*?narrativeTimers\.forEach\(timer => clearTimeout\(timer\)\)[\s\S]*?narrativeTimers\.clear\(\)/, 'Reset does not cancel narrative timers');
 requireMatch(reset, /dlgQueue\s*=\s*\[\][\s\S]*?dialogueReturnState\s*=\s*null/, 'Reset does not clear dialogue queue');
+if (/renderStoryChoice|story-choice-screen/.test(source)) throw new Error('Legacy story-choice screen remains');
+if (/CH02_CHOICE|chooseChapterTwo|chapterTwoBoss|startChapterTwoBoss/.test(source)) throw new Error('Legacy B-sector choice or boss flow remains');
+requireMatch(source, /id=["']gate-choice-actions["']/, 'Gate 09 action container is missing');
+const gateChoice = body('showGateChoice');
+requireMatch(gateChoice, /showDialogueId\('ch05\.mara'\)/, 'Gate choice does not present Mara dialogue');
+requireMatch(gateChoice, /onDialogueQueueDrained/, 'Gate actions are not deferred until dialogue drains');
+const choose = body('chooseGateRoute');
+requireMatch(choose, /gate-choice-actions/, 'Gate choice does not use the bottom dialogue action container');
+if (/BLACKBOX_RECOVERED|GATE_09|DEPLOY_TO_SECTOR_A|CHAPTER_CLEAR/.test(source)) throw new Error('Player-visible English transition title remains');
+if (/GATE 09 collapse alert|SHELTER 09 integrity|TARGETS |MEDICAL SUPPLY|EVAC CONVOY|TEMP FILTER|Route objective complete|REDEPLOY|RETRY GATE 09/.test(source)) throw new Error('Player-visible English Gate 09 text remains');
 console.log('narrative recovery contract ok');
 '@
 
