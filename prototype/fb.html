@@ -49,10 +49,14 @@
             background: rgba(12, 21, 27, 0.94); border: 1px solid #3c6672; border-left: 5px solid #12b6d1; padding: 18px;
             display: flex; gap: 18px; box-shadow: 0 14px 34px rgba(0,0,0,.45); opacity: 0; transition: opacity 0.3s; pointer-events: auto; cursor: pointer; color: #e9f7fa;
         }
-        #dialogue-box.show { opacity: 0; pointer-events: none; }
+        #dialogue-box.show { opacity: 1; pointer-events: auto; }
         #dialogue-avatar { width: 72px; height: 72px; flex: 0 0 72px; font-size: 13px; font-weight: 800; background: rgba(7,14,18,.8); border: 1px solid #3c6672; padding: 0; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; color: #a9cbd3; }
         #dialogue-name { font-size: 14px; color: #80e6f5; margin-bottom: 5px; font-family: monospace; font-weight: 800;}
         #dialogue-text { font-size: 16px; line-height: 1.6; color: #e9f7fa; font-family: monospace; text-shadow: none;}
+        .dialogue-panel { flex: 1 1 0; min-width: 0; }
+        #dialogue-pilot-panel { border-right: 1px solid rgba(128,230,245,.28); padding-right: 18px; }
+        #dialogue-pilot-name { font-size: 14px; color: #9fda83; margin-bottom: 5px; font-family: monospace; font-weight: 800; }
+        #dialogue-pilot-text { font-size: 16px; line-height: 1.6; color: #e9f7fa; font-family: monospace; text-shadow: none; }
 
         #rogue-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6, 12, 17, 0.86); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; color: #e9f7fa; }
         .rogue-title { font-size: 30px; margin-bottom: 30px; letter-spacing: 5px; color: #f2fbfd; font-family: 'ZCOOL QingKe HuangYou';}
@@ -145,7 +149,11 @@
         
         <div id="dialogue-box">
             <div id="dialogue-avatar">SYS</div>
-            <div>
+            <div id="dialogue-pilot-panel" class="dialogue-panel">
+                <div id="dialogue-pilot-name">驾驶员</div>
+                <div id="dialogue-pilot-text"></div>
+            </div>
+            <div class="dialogue-panel">
                 <div id="dialogue-name">SYS</div>
                 <div id="dialogue-text"></div>
             </div>
@@ -322,7 +330,7 @@
         let entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
         let mods = { pierce: false, laser: false, shield: 0, spread: 0, haste: 1, magnet: 40, armor: 0 };
         let cargo = [], equippedRogue = {}, salvage = 0, dropsGiven = 0;
-        let dlgQueue = [], typeTimer;
+        let dlgQueue = [], typeTimer, dialogueIsQueued = false;
         let dialogueEntries = new Map();
         let dialogueSourceLoaded = false;
         let dialogueLoadPromise = null;
@@ -407,14 +415,35 @@
 
         function resolveDialogue(id) {
             const entry = dialogueEntries.get(id);
-            if(!entry) return { speaker: 'SYSTEM', text: `[MISSING_DIALOGUE: ${id}]` };
+            if(!entry) return { speaker: 'SYSTEM', speakerText: `[MISSING_DIALOGUE: ${id}]`, pilotText: '' };
             const speaker = entry.speaker === '指挥频道' ? 'SYSTEM' : (entry.speaker === '叛军指挥官' ? 'REBEL_COMMANDER' : entry.speaker);
-            return { speaker, text: entry.pilots[pKey] || entry.default };
+            return { speaker, speakerText: entry.default, pilotText: entry.pilots[pKey] || '' };
         }
 
         function showDialogueId(id) {
-            const dialogue = resolveDialogue(id);
-            showDialogue(dialogue.speaker, dialogue.text);
+            dlgQueue.push(resolveDialogue(id));
+            if(dlgQueue.length === 1) renderQueuedDialogue();
+        }
+
+        function renderQueuedDialogue() {
+            const dialogue = dlgQueue[0];
+            if(!dialogue) return;
+            showDialogue(dialogue.speaker, dialogue.speakerText, dialogue.pilotText, true);
+        }
+
+        function advanceDialogue() {
+            const box = document.getElementById('dialogue-box');
+            clearTimeout(typeTimer);
+            if(!dialogueIsQueued) {
+                box.classList.remove('show');
+                return;
+            }
+            dlgQueue.shift();
+            if(dlgQueue.length) renderQueuedDialogue();
+            else {
+                dialogueIsQueued = false;
+                box.classList.remove('show');
+            }
         }
 
         function loadSprite(path) {
@@ -1652,7 +1681,8 @@
             showToast('穿甲命中 // ARMOR PIERCED');
         }
 
-        function showDialogue(name, text) {
+        function showDialogue(name, text, pilotText = '', queued = false) {
+            if(dlgQueue.length && !queued) return;
             const box = document.getElementById('dialogue-box');
             const avatar = document.getElementById('dialogue-avatar');
             document.getElementById('dialogue-name').innerText = name;
@@ -1663,6 +1693,8 @@
             const commAvatar = document.getElementById('comm-avatar');
             const commSpeaker = document.getElementById('comm-speaker');
             document.getElementById('comm-text').innerText = text;
+            document.getElementById('dialogue-pilot-name').innerText = PILOTS[pKey].name;
+            document.getElementById('dialogue-pilot-text').innerText = pilotText || '...';
             commSpeaker.innerText = name === 'REBEL_COMMANDER' ? '未授权频道' : (name === 'SYSTEM' ? '指挥频道' : PILOTS[pKey].name);
             if(isLoaded(portrait)) {
                 avatar.innerText = '';
@@ -1678,10 +1710,13 @@
                 commAvatar.innerText = name === 'REBEL_COMMANDER' ? 'REBEL' : 'SYS';
             }
             document.getElementById('dialogue-text').innerText = text;
+            dialogueIsQueued = queued;
             box.classList.add('show');
-            clearTimeout(box._timer);
-            box._timer = setTimeout(() => box.classList.remove('show'), 5200);
+            clearTimeout(typeTimer);
+            typeTimer = setTimeout(queued ? advanceDialogue : () => box.classList.remove('show'), 5200);
         }
+
+        document.getElementById('dialogue-box').onclick = advanceDialogue;
 
         function bossProtectLine() {
             const lines = {
