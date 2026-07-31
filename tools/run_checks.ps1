@@ -71,6 +71,8 @@ requireMatch(source, /id=["']gate-choice-actions["']/, 'Gate 09 action container
 const gateChoice = body('showGateChoice');
 requireMatch(gateChoice, /showDialogueId\('ch05\.mara'\)/, 'Gate choice does not present Mara dialogue');
 requireMatch(gateChoice, /onDialogueQueueDrained/, 'Gate actions are not deferred until dialogue drains');
+const renderGateChoices = body('renderGateChoices');
+requireMatch(renderGateChoices, /addEventListener\('click',\s*event\s*=>\s*\{\s*event\.stopPropagation\(\)/, 'Gate action clicks can advance the bottom dialogue');
 const choose = body('chooseGateRoute');
 requireMatch(choose, /gate-choice-actions/, 'Gate choice does not use the bottom dialogue action container');
 if (/BLACKBOX_RECOVERED|GATE_09|DEPLOY_TO_SECTOR_A|CHAPTER_CLEAR/.test(source)) throw new Error('Player-visible English transition title remains');
