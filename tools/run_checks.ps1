@@ -102,30 +102,48 @@ const readScalar = value => {
     const trimmed = value.trim();
     return trimmed.startsWith(quote) && trimmed.endsWith(quote) ? JSON.parse(trimmed) : trimmed;
 };
+const readQuotedScalar = (value, field, id) => {
+    const trimmed = value.trim();
+    if (!trimmed.startsWith(quote) || !trimmed.endsWith(quote)) {
+        throw new Error('Dialogue field must be quoted: ' + id + '.' + field);
+    }
+    return JSON.parse(trimmed);
+};
 
 for (const line of fences[0][1].split(/\r?\n/)) {
     let match = line.match(/^\s*-\s+id:\s*([^\s#]+)\s*$/);
     if (match) {
         if (entries.has(match[1])) throw new Error('Duplicate dialogue ID: ' + match[1]);
-        entry = { speaker: '', default: '', pilots: {} };
+        entry = { speaker: '', default: '', portrait: '', pilots: {} };
         entries.set(match[1], entry);
         inPilots = false;
         continue;
     }
     if (!entry) continue;
     match = line.match(/^\s{4}speaker:\s*(.+)$/);
-    if (match) { entry.speaker = readScalar(match[1]); inPilots = false; continue; }
+    if (match) { entry.speaker = readQuotedScalar(match[1], 'speaker', [...entries.keys()].at(-1)); inPilots = false; continue; }
     match = line.match(/^\s{4}default:\s*(.+)$/);
-    if (match) { entry.default = readScalar(match[1]); inPilots = false; continue; }
+    if (match) { entry.default = readQuotedScalar(match[1], 'default', [...entries.keys()].at(-1)); inPilots = false; continue; }
+    match = line.match(/^\s{4}portrait:\s*(.+)$/);
+    if (match) { entry.portrait = readQuotedScalar(match[1], 'portrait', [...entries.keys()].at(-1)); inPilots = false; continue; }
     if (/^\s{4}pilots:\s*$/.test(line)) { inPilots = true; continue; }
     match = inPilots && line.match(/^\s{6}([^:\s]+):\s*(.+)$/);
     if (match) entry.pilots[match[1]] = readScalar(match[2]);
 }
 
 for (const [id, parsed] of entries) {
-    if (!parsed.speaker || !parsed.default) throw new Error('Incomplete dialogue entry: ' + id);
+    if (!parsed.speaker || !parsed.default || !parsed.portrait) {
+        throw new Error('Incomplete dialogue entry: ' + id);
+    }
+    if (/[A-Za-z]/.test(parsed.speaker) || /[A-Za-z]/.test(parsed.default)) {
+        throw new Error('Visible ASCII English in dialogue entry: ' + id);
+    }
 }
 if (!entries.size) throw new Error('No dialogue entries found');
+const portraits = new Set(['alice', 'bob', 'charlie', 'command', 'rebel', 'quartermaster', 'scanner', 'mara', 'system']);
+for (const [id, parsed] of entries) {
+    if (!portraits.has(parsed.portrait)) throw new Error('Unsupported dialogue portrait: ' + id);
+}
 console.log('dialogue runtime parser compatibility ok');
 '@
 Invoke-Native { $RuntimeDialogueParserCheck | node - }

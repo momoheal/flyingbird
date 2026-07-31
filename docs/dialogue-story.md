@@ -3,65 +3,80 @@
 ```yaml
 dialogues:
   - id: ch01.deploy
-    speaker: 指挥频道
+    speaker: "指挥频道"
+    portrait: "command"
     default: "战机已离港。穿过小行星带，清除叛军拦截艇。"
     pilots:
       alice: "战机已离港。小行星带里有叛军拦截艇，先清理航线。"
       bob: "战机已离港。顶住正面火力，带队穿过小行星带。"
       charlie: "战机已离港。先标记拦截艇，航线由你打开。"
   - id: ch01.pilot_status
-    speaker: 驾驶员状态
-    default: "裁决者小队，驾驶员身份确认。A 区第三防线正在失去通讯。"
+    speaker: "驾驶员状态"
+    portrait: "system"
+    default: "裁决者小队，驾驶员身份确认。甲区第三防线正在失去通讯。"
     pilots:
       alice: "边境出生，帝国精英飞行员。你仍相信保护平民是军人的职责。"
       bob: "神经链接实验体。先验证数据，再相信命令。"
       charlie: "旧边境战争老兵。你认得 A 区的救援编号。"
   - id: ch01.mission_brief
-    speaker: 指挥频道
-    default: "任务一：恢复 A 区第三防线航道。任务二：回收失联补给船的军用物资。任务三：关闭未经授权的民用通讯。"
+    speaker: "指挥频道"
+    portrait: "command"
+    default: "任务一：恢复甲区第三防线航道。任务二：回收失联补给船的军用物资。任务三：关闭未经授权的民用通讯。"
   - id: ch01.distress_signal
-    speaker: 民用频道
+    speaker: "民用频道"
+    portrait: "system"
     default: "这里是七号补给船……没有武器……请不要按帝国识别码开火……"
   - id: ch01.rescue_scan
-    speaker: 扫描系统
+    speaker: "扫描系统"
+    portrait: "scanner"
     default: "救生舱为空。发现三套儿童呼吸面罩。舱门从外部强制关闭，时间早于叛军出现。"
   - id: ch01.rescue_order
-    speaker: 指挥频道
+    speaker: "指挥频道"
+    portrait: "command"
     default: "忽略民用噪声。救生舱标记为叛军诱饵，立即摧毁。"
   - id: ch01.boss_intro
-    speaker: 叛军指挥官
+    speaker: "叛军指挥官"
+    portrait: "rebel"
     default: "你们赶得太晚。货船和航道，现在都归我。"
     pilots:
       alice: "别把火力浪费在护航艇上。你拦不住我。"
       bob: "装甲再厚也挡不住这艘航母。"
       charlie: "锁定得再快，也救不了这条航线。"
   - id: ch01.debrief
-    speaker: 指挥频道
+    speaker: "指挥频道"
+    portrait: "command"
     default: "航母已失能。回收残骸，返回前进基地。战报记录：目标曾试图撞击逃生舱。"
     pilots:
       alice: "战报说它撞向逃生舱……可我亲眼看见它把碎石挡开。"
       bob: "航迹与战报冲突：航母三次改变航向，全部朝向逃生舱。记录已复制。"
       charlie: "那艘船不是在撞人。它是在替逃生舱挨炮。"
   - id: ch02.quartermaster.armor
-    speaker: 军需官
+    speaker: "军需官"
+    portrait: "quartermaster"
     default: "左舷装甲的擦痕全朝外。缝合航母是在替逃生舱挡碎石，不是在撞它们。"
   - id: ch02.quartermaster.manifest
-    speaker: 军需官
-    default: "我查到一支从 A 区撤出的转运队。名义上运矿，实际航线却通向 B 区检疫井。清单被改过。"
+    speaker: "军需官"
+    portrait: "quartermaster"
+    default: "我查到一支从甲区撤出的转运队。名义上运矿，实际航线却通向乙区检疫井。清单被改过。"
   - id: ch02.rescue_float
-    speaker: 护航频道
+    speaker: "护航频道"
+    portrait: "command"
     default: "失控穿梭艇正在下坠。它发出民用救援浮标，呼叫对象不是军方，是船队里的家属频道。"
   - id: ch02.scan.1
-    speaker: 扫描官
+    speaker: "扫描官"
+    portrait: "scanner"
     default: "扫描一：矿物舱没有矿物，货单原始标签是‘紧急转运’。"
   - id: ch02.scan.2
-    speaker: 扫描官
+    speaker: "扫描官"
+    portrait: "scanner"
     default: "扫描二：船体里有大量生命热源，数量远超船员编制。"
   - id: ch02.scan.3
-    speaker: 扫描官
+    speaker: "扫描官"
+    portrait: "scanner"
     default: "扫描三：身份码被整批删除，逃生门从内部锁死。检疫井不是避难所。"
   - id: prologue.01
     speaker: "轨道管制"
+    portrait: "system"
     default: "坠毁船的求救灯还在闪，信号来自下层废料场。"
     pilots:
       alice: "求救灯每隔两秒闪一次，说明下面至少还有备用电源。"
@@ -69,6 +84,7 @@ dialogues:
       charlie: "废料场的风把灯光吹散了，我们得贴着残骸降下去。"
   - id: prologue.02
     speaker: "船载扫描仪"
+    portrait: "scanner"
     default: "扫描到一条断开的升降轨，轨道尽头有新鲜的拖痕。"
     pilots:
       alice: "拖痕压过锈层，留下它的人刚把重物拖向矿井入口。"
@@ -76,6 +92,7 @@ dialogues:
       charlie: "拖痕没有回头，下面的人带着东西进去了。"
   - id: prologue.03
     speaker: "未知女孩"
+    portrait: "mara"
     default: "别开外面的门，铁壳后面有东西在撞。"
     pilots:
       alice: "撞击把门框敲弯了，先找到孩子再决定怎么挡住它。"
@@ -83,6 +100,7 @@ dialogues:
       charlie: "她躲在门后，先回答她，让她知道我们听见了。"
   - id: ch02.outro.alice
     speaker: "爱丽丝"
+    portrait: "alice"
     default: "货舱门开着，里面的人把孩子的呼吸面罩递到了走廊。"
     pilots:
       alice: "他们先递出面罩，再把自己留在烟里，这不是敌人的撤离。"
@@ -90,6 +108,7 @@ dialogues:
       charlie: "孩子抓着面罩不肯松手，先把走廊清出来。"
   - id: ch02.outro.bob
     speaker: "鲍勃"
+    portrait: "bob"
     default: "封锁舰的牵引束扫过货舱，逃生窗只剩一条绿色通道。"
     pilots:
       alice: "绿色通道会被碎片切断，护着货船穿过去。"
@@ -97,6 +116,7 @@ dialogues:
       charlie: "最慢的货船还没转正，我去把它推到通道中线。"
   - id: ch02.outro.charlie
     speaker: "查理"
+    portrait: "charlie"
     default: "最后一艘货船越过跳跃窗，家属频道里的哭声停了。"
     pilots:
       alice: "频道安静下来不代表安全，确认每艘船都离开锁定区。"
@@ -104,6 +124,7 @@ dialogues:
       charlie: "他们终于不用对着静音频道喊名字了。"
   - id: interlude.rust
     speaker: "维修记录"
+    portrait: "system"
     default: "锈水从通风管滴到地面，滴痕一直通向封死的闸门。"
     pilots:
       alice: "滴痕没有被灰尘盖住，闸门后面的管路还在排水。"
@@ -111,6 +132,7 @@ dialogues:
       charlie: "锈水流向门缝，下面有人还没放弃修这里。"
   - id: interlude.location
     speaker: "地图终端"
+    portrait: "system"
     default: "旧矿井地图缺了一层，缺口正好落在坍塌区下方。"
     pilots:
       alice: "缺失楼层避开了所有公开路线，那里像被人刻意擦掉。"
@@ -118,6 +140,7 @@ dialogues:
       charlie: "矿工把那层从图上抹掉，大概是不想让人再下去。"
   - id: ch05.intro
     speaker: "船载扫描仪"
+    portrait: "scanner"
     default: "封锁线正在合拢，塌方区外壁和旧矿井入口同时出现在雷达上。"
     pilots:
       alice: "封锁线堵住了正面航道，旧矿井入口是我们唯一能绕开的地方。"
@@ -125,6 +148,7 @@ dialogues:
       charlie: "雷达上那道矿井门还亮着，下面有人等着我们。"
   - id: ch05.mara
     speaker: "避难所频道"
+    portrait: "mara"
     default: "姐姐，下面没有灯。妈妈说别跑，可是地板一直在动。"
     pilots:
       alice: "玛拉脚边的裂缝在扩大，先让她离开会下沉的地板。"
@@ -132,6 +156,7 @@ dialogues:
       charlie: "她记得妈妈的话，先告诉她我们会牵着她走。"
   - id: ch05.choice.seal_gate
     speaker: "工程终端"
+    portrait: "system"
     default: "封死矿井闸门能稳住支撑柱，但玛拉的母亲还在门外。"
     pilots:
       alice: "闸门落下能保住里面的人，可外面的人会被留在坍塌区。"
@@ -139,13 +164,15 @@ dialogues:
       charlie: "她妈妈的定位灯就在门外，我不能假装没看见。"
   - id: ch05.choice.break_blockade
     speaker: "战术显示"
+    portrait: "system"
     default: "冲破封锁线能带走矿井的人，但巡逻舰已把炮口转向撤离船。"
     pilots:
       alice: "炮口对着撤离船，我们冲过去才能替他们挡住第一轮火力。"
       bob: "巡逻舰转炮需要四秒，最大推力可以在它开火前越过缺口。"
       charlie: "撤离船的灯排成一线，不能让它们在这里被困住。"
   - id: ch05.choice.deep_rock
-    speaker: "Bob"
+    speaker: "鲍勃"
+    portrait: "bob"
     default: "打穿塌方区外壁。我能把通风系统改成单向过滤，但我们会错过封锁线的最后窗口。"
     pilots:
       alice: "外壁后面有被困者的热源，错过窗口也要把他们带出来。"
@@ -153,6 +180,7 @@ dialogues:
       charlie: "岩层后有求救敲击声，我不想把那声音留在黑里。"
   - id: ending.empire.intro
     speaker: "帝国巡逻队"
+    portrait: "command"
     default: "闸门已经封死，封锁舰正在为撤离船标记安全航线。"
     pilots:
       alice: "闸门守住了矿井，先护送每艘撤离船离开火线。"
@@ -160,6 +188,7 @@ dialogues:
       charlie: "门外的灯熄了，但船上的人至少还能回家。"
   - id: ending.empire.result
     speaker: "战报终端"
+    portrait: "system"
     default: "封锁线恢复完整，矿井坍塌停止。玛拉在医疗走廊等候，母亲仍留在闸门另一侧。"
     pilots:
       alice: "名单少了一页是因为我们守住了出口，不是因为命令干净。"
@@ -167,6 +196,7 @@ dialogues:
       charlie: "玛拉在医疗走廊醒着，可她妈妈的定位灯还在闸门外。"
   - id: ending.rebel.intro
     speaker: "护航频道"
+    portrait: "command"
     default: "封锁线被撕开一道口子，撤离船正从炮火间穿过。"
     pilots:
       alice: "缺口撑不了多久，我去压住追来的巡逻舰。"
@@ -174,6 +204,7 @@ dialogues:
       charlie: "每艘船都在朝外飞，别让最后一艘掉队。"
   - id: ending.rebel.result
     speaker: "护航频道"
+    portrait: "command"
     default: "最后一艘撤离船越过封锁线，身后的矿井灯光留在烟里。"
     pilots:
       alice: "矿井灯光还在，说明里面的人也许还有机会。"
@@ -181,6 +212,7 @@ dialogues:
       charlie: "他们带着灯飞出去，里面的人不会被完全忘掉。"
   - id: ending.deep_rock.intro
     speaker: "工程终端"
+    portrait: "system"
     default: "钻头穿透外壁，单向过滤启动，白色粉尘没有再涌进通道。"
     pilots:
       alice: "粉尘被挡在外面，立刻把通道里的人带到钻孔口。"
@@ -188,6 +220,7 @@ dialogues:
       charlie: "他们从粉尘里伸出手，我们已经能把他们拉出来。"
   - id: ending.deep_rock.result
     speaker: "矿井频道"
+    portrait: "system"
     default: "塌方区后的人全部通过钻孔，封锁线的最后窗口在身后关闭。"
     pilots:
       alice: "窗口关了，但被困的人一个不少地出来了。"
