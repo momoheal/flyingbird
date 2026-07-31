@@ -1612,10 +1612,10 @@
         function startInterlude(run = narrativeRun) {
             if(run !== narrativeRun || (state !== 'INTERLUDE' && dialogueReturnState !== 'INTERLUDE')) return;
             showDialogueId('interlude.rust');
-            showToast('RUST RISK // coolant-contaminated corrosion is spreading below the sealed gate');
+            showToast('锈蚀风险：冷却液污染正在封锁门下方蔓延');
             scheduleNarrative(() => {
                 showDialogueId('interlude.location');
-                showToast('BOB UNAUTHORIZED LOCATION PACKET // collapsed sector coordinates received');
+                showToast('鲍勃的未授权坐标包：已收到塌方区位置');
             }, 1700, run);
             scheduleNarrative(() => startChapterFive(run), 3600, run);
         }
@@ -1624,7 +1624,7 @@
             if(run !== narrativeRun || (state !== 'INTERLUDE' && dialogueReturnState !== 'INTERLUDE')) return;
             chapter = 5; chapterFrame = 0;
             entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
-            gate09 = { waves: 0, choiceShown: false, shelter: new GateObjective('shelter', 'SHELTER 09', canvas.width / 2, canvas.height * .27, CHAPTER_FIVE.shelterHp), targets: [] };
+            gate09 = { waves: 0, choiceShown: false, shelter: new GateObjective('shelter', '第 09 避难所', canvas.width / 2, canvas.height * .27, CHAPTER_FIVE.shelterHp), targets: [] };
             setDialogueReturnState('CH05_PLAY'); showDialogueId('ch05.intro'); updateGate09Hud();
             showTransition('第 09 隔离关口', '塌方警报已确认，避难所外环需要立刻防守。', 1200, spawnGateWave);
         }

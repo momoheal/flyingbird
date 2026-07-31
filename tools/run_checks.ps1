@@ -74,7 +74,7 @@ requireMatch(gateChoice, /onDialogueQueueDrained/, 'Gate actions are not deferre
 const choose = body('chooseGateRoute');
 requireMatch(choose, /gate-choice-actions/, 'Gate choice does not use the bottom dialogue action container');
 if (/BLACKBOX_RECOVERED|GATE_09|DEPLOY_TO_SECTOR_A|CHAPTER_CLEAR/.test(source)) throw new Error('Player-visible English transition title remains');
-if (/GATE 09 collapse alert|SHELTER 09 integrity|TARGETS |MEDICAL SUPPLY|EVAC CONVOY|TEMP FILTER|Route objective complete|REDEPLOY|RETRY GATE 09/.test(source)) throw new Error('Player-visible English Gate 09 text remains');
+if (/GATE 09 collapse alert|SHELTER 09 integrity|SHELTER 09|RUST RISK|BOB UNAUTHORIZED|TARGETS |MEDICAL SUPPLY|EVAC CONVOY|TEMP FILTER|Route objective complete|REDEPLOY|RETRY GATE 09/.test(source)) throw new Error('Player-visible English Gate 09 text remains');
 console.log('narrative recovery contract ok');
 '@
 
