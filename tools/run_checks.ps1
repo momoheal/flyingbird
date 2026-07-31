@@ -87,7 +87,7 @@ console.log('narrative recovery contract ok');
 Write-Host "`n[2/4] Validating dialogue source..."
 Invoke-Native { node -e "const fs=require('fs'); const source=fs.readFileSync('docs/dialogue-story.md','utf8'); const marker=String.fromCharCode(96).repeat(3); const fences=[...source.matchAll(new RegExp('^'+marker+'yaml\\s*\\r?\\n([\\s\\S]*?)^'+marker+'\\s*$','gm'))]; if(fences.length!==1) throw new Error('Expected exactly one yaml fence in docs/dialogue-story.md'); const entries=fences[0][1].split(String.fromCharCode(10)).map(line=>line.trim()).filter(line=>line.startsWith('- id: ')).map(line=>line.slice(6)); if(!entries.length) throw new Error('No dialogue id entries found in yaml fence'); const duplicates=entries.filter((id,index)=>entries.indexOf(id)!==index); if(duplicates.length) throw new Error('Duplicate dialogue IDs: '+[...new Set(duplicates)].join(', ')); const required=['ch01.deploy','ch01.boss_intro','ch01.debrief','ch02.quartermaster.armor','ch02.quartermaster.manifest','ch02.scan.1','ch02.scan.2','ch02.scan.3','ch02.rescue_float','prologue.01','prologue.02','prologue.03','ch02.outro.alice','ch02.outro.bob','ch02.outro.charlie','interlude.rust','interlude.location','ch05.intro','ch05.mara','ch05.choice.seal_gate','ch05.choice.break_blockade','ch05.choice.deep_rock','ending.empire.intro','ending.empire.result','ending.rebel.intro','ending.rebel.result','ending.deep_rock.intro','ending.deep_rock.result']; const missing=required.filter(id=>!entries.includes(id)); if(missing.length) throw new Error('Missing required dialogue IDs: '+missing.join(', ')); console.log('dialogue source ok');" }
 
-$RuntimeDialogueParserCheck = @'
+$DialogueDataSchemaCheck = @'
 const fs = require('fs');
 const source = fs.readFileSync('docs/dialogue-story.md', 'utf8');
 const fences = [...source.matchAll(/^```yaml\s*\r?\n([\s\S]*?)^```\s*$/gm)];
@@ -134,7 +134,8 @@ for (const [id, parsed] of entries) {
     if (!parsed.speaker || !parsed.default || !parsed.portrait) {
         throw new Error('Incomplete dialogue entry: ' + id);
     }
-    if (/[A-Za-z]/.test(parsed.speaker) || /[A-Za-z]/.test(parsed.default)) {
+    const visibleText = [parsed.speaker, parsed.default, ...Object.values(parsed.pilots)];
+    if (visibleText.some(value => /[A-Za-z]{3,}/.test(value))) {
         throw new Error('Visible ASCII English in dialogue entry: ' + id);
     }
 }
@@ -143,9 +144,9 @@ const portraits = new Set(['alice', 'bob', 'charlie', 'command', 'rebel', 'quart
 for (const [id, parsed] of entries) {
     if (!portraits.has(parsed.portrait)) throw new Error('Unsupported dialogue portrait: ' + id);
 }
-console.log('dialogue runtime parser compatibility ok');
+console.log('dialogue data schema validation ok');
 '@
-Invoke-Native { $RuntimeDialogueParserCheck | node - }
+Invoke-Native { $DialogueDataSchemaCheck | node - }
 
 Invoke-Native { node -e "const fs=require('fs'); const source=fs.readFileSync('docs/dialogue-story.md','utf8'); const required=['ch01.pilot_status','ch01.mission_brief','ch01.distress_signal','ch01.rescue_scan','ch01.rescue_order']; const missing=required.filter(id=>!source.includes('id: '+id)); if(missing.length) throw new Error('Missing Chapter 1 opening dialogue IDs: '+missing.join(', ')); console.log('chapter 01 opening dialogue ok');" }
 

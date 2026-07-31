@@ -17,7 +17,7 @@ dialogues:
     pilots:
       alice: "边境出生，帝国精英飞行员。你仍相信保护平民是军人的职责。"
       bob: "神经链接实验体。先验证数据，再相信命令。"
-      charlie: "旧边境战争老兵。你认得 A 区的救援编号。"
+      charlie: "旧边境战争老兵。你认得甲区的救援编号。"
   - id: ch01.mission_brief
     speaker: "指挥频道"
     portrait: "command"
