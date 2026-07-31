@@ -46,13 +46,21 @@
 
         #dialogue-box {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 800px; 
-            background: rgba(12, 21, 27, 0.94); border: 1px solid #3c6672; border-left: 5px solid #12b6d1; padding: 18px;
-            display: flex; gap: 18px; box-shadow: 0 14px 34px rgba(0,0,0,.45); opacity: 0; transition: opacity 0.3s; pointer-events: auto; cursor: pointer; color: #e9f7fa;
+            background: rgba(12, 21, 27, 0.96); border: 1px solid #3c6672; border-left: 5px solid #12b6d1; padding: 14px;
+            display: grid; grid-template-columns: minmax(120px, 1fr) minmax(220px, 2.4fr) minmax(120px, 1fr); gap: 14px; box-shadow: 0 14px 34px rgba(0,0,0,.45); opacity: 0; transition: opacity 0.2s; pointer-events: none; cursor: pointer; color: #e9f7fa; z-index: 70;
         }
-        #dialogue-box.show { opacity: 0; pointer-events: none; }
-        #dialogue-avatar { width: 72px; height: 72px; flex: 0 0 72px; font-size: 13px; font-weight: 800; background: rgba(7,14,18,.8); border: 1px solid #3c6672; padding: 0; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; color: #a9cbd3; }
-        #dialogue-name { font-size: 14px; color: #80e6f5; margin-bottom: 5px; font-family: monospace; font-weight: 800;}
-        #dialogue-text { font-size: 16px; line-height: 1.6; color: #e9f7fa; font-family: monospace; text-shadow: none;}
+        #dialogue-box.show { opacity: 1; pointer-events: auto; }
+        .dialogue-party { display: flex; gap: 9px; align-items: center; min-width: 0; }
+        .dialogue-party.right { justify-content: flex-end; text-align: right; }
+        .dialogue-avatar { width: 64px; height: 64px; flex: 0 0 64px; font-size: 24px; font-weight: 800; background: rgba(7,14,18,.8); border: 1px solid #3c6672; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; color: #a9cbd3; background-size: cover; background-position: center; }
+        .dialogue-label { min-width: 0; font-size: 14px; color: #80e6f5; font-family: monospace; font-weight: 800; overflow-wrap: anywhere; }
+        #dialogue-text { font-size: 16px; line-height: 1.6; color: #e9f7fa; font-family: monospace; text-shadow: none; text-align: center; }
+        #dialogue-advance { color: #a9cbd3; font-size: 12px; text-align: center; margin-top: 7px; }
+        #gate-choice-actions { grid-column: 1 / -1; display: none; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; pointer-events: auto; cursor: default; }
+        #gate-choice-actions.show { display: grid; }
+        #gate-choice-actions button { min-height: 104px; padding: 10px; text-align: left; font-size: 15px; letter-spacing: 0; text-transform: none; background: #173039; border: 1px solid #80e6f5; }
+        #gate-choice-actions button:hover, #gate-choice-actions button:focus-visible { background: #284d59; outline: 2px solid #fff18a; outline-offset: 2px; }
+        .gate-choice-cost { display: block; margin-top: 7px; color: #d7e7bc; font-size: 12px; line-height: 1.4; }
 
         #rogue-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6, 12, 17, 0.86); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; color: #e9f7fa; }
         .rogue-title { font-size: 30px; margin-bottom: 30px; letter-spacing: 5px; color: #f2fbfd; font-family: 'ZCOOL QingKe HuangYou';}
@@ -61,7 +69,6 @@
         .upgrade-card { background: rgba(13,24,29,.92); border: 1px solid #3c6672; width: 220px; padding: 18px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; color: #e9f7fa; box-shadow: 0 10px 22px rgba(0,0,0,.32); position: relative; overflow: hidden; }
         .upgrade-card::before { content: ""; position: absolute; inset: 0; background-image: var(--ui-frame); background-size: cover; background-position: center; opacity: .16; pointer-events: none; mix-blend-mode: screen; }
         .upgrade-card:hover { transform: translateY(-5px); border-color: #12b6d1; background: rgba(18,34,41,.96); box-shadow: 0 18px 30px rgba(0,0,0,.36);}
-        .branch-art { width: 58px; height: 58px; margin-bottom: 12px; background: center / contain no-repeat; flex: 0 0 58px; }
         .card-empire { border-top: 3px solid #33ccff; }
         .card-rebel { border-top: 3px solid #ff6600; }
         .card-type { font-size: 12px; color: #a9cbd3; margin-bottom: 10px; font-family: monospace; position: relative;}
@@ -93,6 +100,7 @@
         .route-node.active { border-color: #d69b2c; box-shadow: 0 16px 28px rgba(0,0,0,.36); }
         .route-node h3 { margin: 0 0 10px; font-size: 18px; color: #f2fbfd; }
         .route-node p { margin: 0; color: #c4dbe0; font-size: 13px; line-height: 1.45; }
+        @media (max-width: 420px) { #dialogue-box { width: calc(100% - 16px); bottom: 8px; padding: 10px; gap: 8px; grid-template-columns: 1fr 1.6fr 1fr; } .dialogue-avatar { width: 44px; height: 44px; flex-basis: 44px; } #gate-choice-actions { grid-template-columns: 1fr; } #gate-choice-actions button { min-height: 0; } }
     </style>
 </head>
 <body>
@@ -115,7 +123,7 @@
                 </div>
             </div>
             <div id="boss-frame" class="hidden">
-                <div id="boss-name"><span>缝合航母</span><span id="boss-phase">PHASE 1</span></div>
+                <div id="boss-name"><span>缝合航母</span><span id="boss-phase">阶段一</span></div>
                 <div id="boss-bar-wrap"><div id="boss-bar"></div></div>
             </div>
             <div id="mission-panel">
@@ -144,23 +152,28 @@
         </div>
         
         <div id="dialogue-box">
-            <div id="dialogue-avatar">SYS</div>
-            <div>
-                <div id="dialogue-name">SYS</div>
-                <div id="dialogue-text"></div>
+            <div class="dialogue-party">
+                <div id="dialogue-pilot-avatar" class="dialogue-avatar">◆</div>
+                <div id="dialogue-pilot-name" class="dialogue-label"></div>
             </div>
+            <div><div id="dialogue-text"></div><div id="dialogue-advance">点击或按空格 / 回车继续</div></div>
+            <div class="dialogue-party right">
+                <div id="dialogue-name" class="dialogue-label"></div>
+                <div id="dialogue-avatar" class="dialogue-avatar">▣</div>
+            </div>
+            <div id="gate-choice-actions" aria-label="第 09 隔离关口行动"></div>
         </div>
     </div>
 
     <div id="rogue-screen" class="hidden pointer-auto">
-        <div class="rogue-title">TACTICAL_REFIT_READY // 选择改装路线</div>
+        <div class="rogue-title">战术整备</div>
         <div id="rogue-note" class="rogue-note">战斗暂停。选择一项模块后继续推进第一章。</div>
         <div id="cards-container"></div>
     </div>
-    <div id="toast">MISSION EVENT</div>
+    <div id="toast">任务提示</div>
     <div id="transition-screen">
         <div id="transition-panel">
-            <div id="transition-title">DEPLOYMENT</div>
+            <div id="transition-title">部署中</div>
             <div id="transition-text">战术链路建立中。</div>
         </div>
     </div>
@@ -247,6 +260,14 @@
             maxActiveMinions: 12
         };
 
+        const CHAPTER_FIVE = {
+            title: '第五章：第 09 隔离关口',
+            subtitle: '避难所外环 // 塌方、封门与爆破船',
+            targetWaves: 3,
+            waveIntervalFrames: 180,
+            shelterHp: 210
+        };
+
         const ASSET_PATHS = {
             backgrounds: {
                 ch01: '../art/sf_ch01_bg_sector_a_scrapyard_source.png',
@@ -288,49 +309,40 @@
                     interceptor: '../assets/ch02/enemy/sf_ch02_enemy_quarantine_interceptor_512.png',
                     drone: '../assets/ch02/enemy/sf_ch02_enemy_inspection_drone_512.png'
                 },
-                bosses: {
-                    purifier: '../assets/ch02/boss/sf_ch02_boss_purification_cruiser_2048.png',
-                    runner: '../assets/ch02/boss/sf_ch02_boss_convoy_runner_2048.png'
-                },
                 fx: {
                     beacon: '../assets/ch02/fx/sf_ch02_fx_distress_beacon_sheet_1024x512.png',
                     scan: '../assets/ch02/fx/sf_ch02_fx_quarantine_scan_sheet_1024x512.png'
-                },
-                ui: {
-                    protect: '../assets/ch02/ui/sf_ch02_ui_route_protect_256.png',
-                    execute: '../assets/ch02/ui/sf_ch02_ui_route_execute_256.png'
                 }
             }
         };
 
         let state = 'MENU';
+        const NARRATIVE_STATES = Object.freeze(['INTERLUDE', 'CH05_PLAY', 'CH05_CHOICE', 'ENDING_PLAY', 'ENDING_RESULT']);
         let frame = 0, score = 0, chapterFrame = 0;
         let pKey = 'alice';
         let bgScrollY = 0;
-        let chapter = 1, branch = null, scansCollected = 0, convoy = null, chapterTwoWaves = 0;
-        // Chapter 2 branch bosses deliberately live outside the Chapter 1 `boss` flow.
-        let chapterTwoBoss = null;
-        let chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
-        let chapterTwoVictory = null, chapterTwoOutroShown = false;
+        let chapter = 1, route = null, scansCollected = 0, convoy = null, chapterTwoWaves = 0;
         let player, boss = null, bossSpawned = false, chapterCleared = false, wavesSpawned = 0, enemiesDestroyed = 0, lastEliteIndex = -1;
         let rescuePod = null, rescueScanProgress = 0, openingFrame = 0, openingTimers = [];
+        let narrativeTimers = new Set(), narrativeRun = 0;
         let bossDialogueLock = false;
         let bossCrash = null;
         let endingStarted = false;
+        let gate09 = null;
         let combatBarkCooldown = 0;
         let pierceFeedbackCooldown = 0;
         let entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
         let mods = { pierce: false, laser: false, shield: 0, spread: 0, haste: 1, magnet: 40, armor: 0 };
         let cargo = [], equippedRogue = {}, salvage = 0, dropsGiven = 0;
-        let dlgQueue = [], typeTimer;
+        let dlgQueue = [], dialogueReturnState = null, dialogueDrainCallbacks = [];
         let dialogueEntries = new Map();
         let dialogueSourceLoaded = false;
         let dialogueLoadPromise = null;
         let dialogueLoadWarned = false;
         const FALLBACK_DIALOGUE_ENTRIES = new Map([
-            ['ch01.deploy', { speaker: '指挥频道', default: '战机已离港。穿过小行星带，清除叛军拦截艇。', pilots: {} }],
-            ['ch01.boss_intro', { speaker: '叛军指挥官', default: '你们赶得太晚。货船和航道，现在都归我。', pilots: {} }],
-            ['ch01.debrief', { speaker: '指挥频道', default: '航母已失能。回收残骸，立刻返回前进基地。', pilots: {} }]
+            ['ch01.deploy', { speaker: '指挥频道', portrait: 'command', default: '战机已离港。穿过小行星带，清除叛军拦截艇。', pilots: {} }],
+            ['ch01.boss_intro', { speaker: '叛军指挥官', portrait: 'rebel', default: '你们赶得太晚。货船和航道，现在都归我。', pilots: {} }],
+            ['ch01.debrief', { speaker: '指挥频道', portrait: 'command', default: '航母已失能。回收残骸，立刻返回前进基地。', pilots: {} }]
         ]);
         const SPRITES = {};
 
@@ -350,7 +362,7 @@
                 let match = line.match(/^\s*-\s+id:\s*([^\s#]+)\s*$/);
                 if(match) {
                     if(entries.has(match[1])) throw new Error(`Duplicate dialogue id: ${match[1]}`);
-                    entry = { speaker: '', default: '', pilots: {} };
+                    entry = { speaker: '', portrait: '', default: '', pilots: {} };
                     entries.set(match[1], entry);
                     inPilots = false;
                     continue;
@@ -368,6 +380,12 @@
                     inPilots = false;
                     continue;
                 }
+                match = line.match(/^\s{4}portrait:\s*(.+)$/);
+                if(match) {
+                    entry.portrait = readScalar(match[1]);
+                    inPilots = false;
+                    continue;
+                }
                 if(/^\s{4}pilots:\s*$/.test(line)) {
                     inPilots = true;
                     continue;
@@ -377,7 +395,7 @@
             }
 
             for(const [id, parsed] of entries) {
-                if(!parsed.speaker || !parsed.default) throw new Error(`Incomplete dialogue entry: ${id}`);
+                if(!parsed.speaker || !parsed.portrait || !parsed.default) throw new Error(`Incomplete dialogue entry: ${id}`);
             }
             if(!entries.size) throw new Error('No dialogue entries found');
             return entries;
@@ -407,14 +425,12 @@
 
         function resolveDialogue(id) {
             const entry = dialogueEntries.get(id);
-            if(!entry) return { speaker: 'SYSTEM', text: `[MISSING_DIALOGUE: ${id}]` };
-            const speaker = entry.speaker === '指挥频道' ? 'SYSTEM' : (entry.speaker === '叛军指挥官' ? 'REBEL_COMMANDER' : entry.speaker);
-            return { speaker, text: entry.pilots[pKey] || entry.default };
+            if(!entry) return { speaker: '系统提示', portrait: 'system', text: `缺少对话：${id}` };
+            return { speaker: entry.speaker, portrait: entry.portrait, text: entry.pilots[pKey] || entry.default };
         }
 
         function showDialogueId(id) {
-            const dialogue = resolveDialogue(id);
-            showDialogue(dialogue.speaker, dialogue.text);
+            enqueueDialogue(resolveDialogue(id));
         }
 
         function loadSprite(path) {
@@ -437,9 +453,7 @@
             SPRITES.ch02 = {
                 convoy: loadSprite(ASSET_PATHS.ch02.convoy),
                 enemies: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.enemies).map(([key, path]) => [key, loadSprite(path)])),
-                bosses: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.bosses).map(([key, path]) => [key, loadSprite(path)])),
-                fx: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.fx).map(([key, path]) => [key, loadSprite(path)])),
-                ui: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.ui).map(([key, path]) => [key, loadSprite(path)]))
+                fx: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.fx).map(([key, path]) => [key, loadSprite(path)]))
             };
             hydrateStaticArt();
         }
@@ -683,13 +697,6 @@
             ctx.restore();
         }
 
-        function drawChapterTwoBossSprite(key, x, y, width, height) {
-            const sprite = SPRITES.ch02 && SPRITES.ch02.bosses[key];
-            if(!isLoaded(sprite)) return false;
-            drawReadableSprite(ctx, sprite, x - width / 2, y - height / 2, width, height);
-            return true;
-        }
-
         // --- 核心游戏类 ---
 
         class Player {
@@ -700,7 +707,7 @@
                 this.abilityCharge = 0; this.abilityActive = 0; this.invuln = 0;
             }
             update() {
-                if(state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH01_BRIEFING' || state === 'CH01_RESCUE') {
+                if(state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH05_PLAY' || state === 'ENDING_PLAY' || state === 'CH01_BRIEFING' || state === 'CH01_RESCUE') {
                     let spd = PILOTS[pKey].spd;
                     if(this.abilityActive > 0 && pKey === 'alice') spd *= 1.65;
                     this.x += (this.tx-this.x)*spd; this.y += (this.ty-this.y)*spd;
@@ -710,7 +717,7 @@
                     let fr = Math.floor(PILOTS[pKey].fr / mods.haste);
                     // Scanning remains an active flight state: keep automatic fire enabled
                     // during rescue/beacon scans, while the opening briefing stays weapon-locked.
-                    if((state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH01_RESCUE') && frame % Math.max(3, fr) === 0) this.shoot();
+                    if((state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH05_PLAY' || state === 'ENDING_PLAY' || state === 'CH01_RESCUE') && frame % Math.max(3, fr) === 0) this.shoot();
                     this.abilityCharge = Math.min(100, this.abilityCharge + (pKey === 'bob' ? 0.26 : 0.18));
                     if(this.abilityActive > 0) this.abilityActive--;
                     if(this.invuln > 0) this.invuln--;
@@ -765,6 +772,7 @@
                 explode(this.x, this.y, '#f33');
                 if(this.hp <= 0) {
                     if(chapter === 2) failChapterTwo();
+                    else if(chapter === 5) failGate09();
                     else endRun(false);
                 }
             }
@@ -779,18 +787,17 @@
                 explode(this.x, this.y, '#55ff88');
             }
             useAbility() {
-                if((state !== 'PLAYING' && state !== 'CH02_PLAY') || this.abilityCharge < 100) return;
+                if((state !== 'PLAYING' && state !== 'CH02_PLAY' && state !== 'CH05_PLAY' && state !== 'ENDING_PLAY') || this.abilityCharge < 100) return;
                 this.abilityCharge = 0;
                 if(pKey === 'alice') {
                     this.abilityActive = 150; this.invuln = 150;
                     showToast('红移冲刺：无视碰撞，穿越敌阵');
                 } else if(pKey === 'bob') {
                     this.abilityActive = 120;
-                    const chapterTwoBossTarget = chapterTwoBoss && !chapterTwoBoss.defeated ? chapterTwoBoss : null;
-                    const targets = [...entities.ens, boss, chapterTwoBossTarget].filter(Boolean).slice(0, 12);
+                    const targets = [...entities.ens, boss].filter(Boolean).slice(0, 12);
                     targets.forEach(t => {
                         entities.missiles.push(new HomingMissile(this.x, this.y, t, '#33ccff', 125));
-                        if(t && t !== boss && t !== chapterTwoBossTarget) t.v.y *= 0.45;
+                        if(t && t !== boss) t.v.y *= 0.45;
                     });
                     showToast(`天穹追踪协议：锁定 ${targets.length} 个目标，敌机减速`);
                 } else {
@@ -856,9 +863,7 @@
         class Enemy {
             constructor(kind = 'scout', x = null) {
                 this.kind = kind;
-                this.type = chapter === 2
-                    ? (branch === 'protection' ? 'ch02_drone' : (branch === 'execute' ? 'ch02_interceptor' : 'rebel'))
-                    : 'rebel';
+                this.type = chapter === 2 ? 'ch02_interceptor' : 'rebel';
                 this.r = kind === 'elite' ? 30 : Math.random()*10+15;
                 this.x = Math.random()*(canvas.width-this.r*2)+this.r; this.y = -30;
                 if(x !== null) this.x = x;
@@ -1125,7 +1130,7 @@
                     : ['别挡航线。', '我看见碎片了，继续推进。', '短点射，省弹。']
             };
             const pool = lines[pKey] || lines.alice;
-            showDialogue('PLAYER', pool[Math.floor(Math.random()*pool.length)]);
+            showCombatBark('PLAYER', pool[Math.floor(Math.random()*pool.length)]);
             combatBarkCooldown = kind === 'elite' ? 260 : 180;
         }
 
@@ -1146,288 +1151,6 @@
             }
         }
 
-        class ChapterTwoBossTarget {
-            constructor(owner, label, xOffset, yOffset, hp, color) {
-                this.owner = owner; this.label = label; this.xOffset = xOffset; this.yOffset = yOffset;
-                this.hp = hp; this.maxHp = hp; this.r = 19; this.color = color; this.active = true;
-                this.x = owner.x + xOffset; this.y = owner.y + yOffset;
-            }
-            update() {
-                this.x = this.owner.x + this.xOffset;
-                this.y = this.owner.y + this.yOffset;
-            }
-            damage(amount) {
-                if(!this.active) return false;
-                this.hp = Math.max(0, this.hp - amount);
-                if(this.hp === 0) this.active = false;
-                return true;
-            }
-            draw() {
-                if(!this.active) return;
-                ctx.save(); ctx.translate(this.x, this.y);
-                ctx.fillStyle = '#14171b'; ctx.strokeStyle = this.color; ctx.lineWidth = 2;
-                ctx.shadowColor = this.color; ctx.shadowBlur = 12;
-                ctx.beginPath(); ctx.arc(0, 0, this.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = this.color;
-                ctx.beginPath(); ctx.arc(0, 0, 7 + Math.sin(frame / 7) * 2, 0, Math.PI * 2); ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        class ChapterTwoBossPickup {
-            constructor(x, y, type, color) {
-                this.x = x; this.y = y; this.type = type; this.color = color; this.r = 14; this.life = 900; this.claimed = false;
-            }
-            update() {
-                this.life--;
-                this.y += Math.sin(frame / 18) * 0.3;
-                if(player && Math.hypot(player.x - this.x, player.y - this.y) < player.r + this.r) this.claim();
-                return this.life > 0 && !this.claimed;
-            }
-            claim() {
-                if(this.claimed) return;
-                this.claimed = true;
-                if(this.type === 'overcharge') chapterTwoBossBuff.overcharge = 540;
-                if(this.type === 'intercept') chapterTwoBossBuff.interceptReady = true;
-                showToast(this.type === 'overcharge' ? 'TEMP OVERCHARGE READY' : 'INTERCEPT CLEAR READY');
-            }
-            draw() {
-                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(frame / 35);
-                ctx.strokeStyle = this.color; ctx.fillStyle = 'rgba(10,13,16,.8)'; ctx.lineWidth = 2;
-                ctx.shadowColor = this.color; ctx.shadowBlur = 14;
-                ctx.beginPath(); ctx.rect(-this.r, -this.r, this.r * 2, this.r * 2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = this.color; ctx.fillRect(-4, -8, 8, 16);
-                ctx.restore();
-            }
-        }
-
-        class ChapterTwoBranchBoss {
-            constructor(config) {
-                this.config = config; this.x = canvas.width / 2; this.y = -150; this.r = 96;
-                this.hp = config.hp; this.maxHp = config.hp; this.phase = 1; this.fireCd = 90; this.pattern = 0;
-                this.defeated = false; this.introShown = false; this.phaseTwoShown = false;
-                this.targets = []; this.pickups = []; this.objective = ''; this.initializedPhases = new Set(); this.syncPhase();
-            }
-            update() {
-                if(this.defeated) return;
-                this.x += (canvas.width / 2 + Math.sin(frame / 84) * 140 - this.x) * 0.028;
-                this.y += (145 - this.y) * 0.035;
-                this.targets.forEach(target => target.update());
-                this.pickups = this.pickups.filter(pickup => { const alive = pickup.update(); if(alive) pickup.draw(); return alive; });
-                if(!this.introShown) { this.introShown = true; showDialogueId(this.config.dialogueRoot + '.intro'); }
-                if(--this.fireCd <= 0) { this.fireCd = Math.max(42, 98 - this.phase * 13); this.firePattern(); }
-                if(chapterTwoBossBuff.overcharge > 0) chapterTwoBossBuff.overcharge--;
-                this.draw();
-            }
-            syncPhase() {
-                const hpPct = this.hp / this.maxHp;
-                const next = hpPct <= 0.33 ? 3 : hpPct <= 0.66 ? 2 : 1;
-                this.phase = next;
-                if(this.initializedPhases.has(next)) return;
-                this.initializedPhases.add(next);
-                this.targets = this.config.makeTargets(this, next);
-                this.objective = this.config.objectives[next - 1];
-                if(next === 2 && !this.phaseTwoShown) {
-                    this.phaseTwoShown = true;
-                    this.pickups.push(new ChapterTwoBossPickup(this.x, this.y + this.r + 36, this.config.pickupType, this.config.color));
-                    showDialogueId(this.config.dialogueRoot + '.phase2');
-                }
-            }
-            damage(projectile) {
-                if(this.defeated || !projectile) return false;
-                const damage = Math.max(1, projectile.dmg || 1) * chapterTwoPlayerDamageMultiplier();
-                const target = this.targets.find(node => node.active && projectileHits(projectile, node));
-                if(target) {
-                    target.damage(damage);
-                    explode(projectile.x, projectile.y, target.color);
-                    return true;
-                }
-                if(this.targets.some(node => node.active)) return false;
-                if(!projectileHits(projectile, this)) return false;
-                this.hp = Math.max(0, this.hp - damage);
-                explode(projectile.x, projectile.y, this.config.color);
-                this.syncPhase();
-                if(this.hp === 0) this.defeated = true;
-                return true;
-            }
-            firePattern() {
-                this.pattern = (this.pattern + 1) % 2;
-                const originY = this.y + this.r * 0.5;
-                if(this.pattern === 0) {
-                    const aim = Math.atan2((player ? player.y : canvas.height * 0.75) - originY, (player ? player.x : this.x) - this.x);
-                    const count = this.phase + 1;
-                    for(let i = 0; i < count; i++) {
-                        const angle = aim + (i - (count - 1) / 2) * 0.16;
-                        const bullet = new EnemyBullet(this.x, originY, 3);
-                        bullet.v.x = Math.cos(angle) * (2.3 + this.phase * 0.25); bullet.v.y = Math.sin(angle) * (2.3 + this.phase * 0.25);
-                        bullet.dmg = 9 + this.phase * 2; entities.epjs.push(bullet);
-                    }
-                } else {
-                    const lanes = 6 + this.phase;
-                    for(let i = 0; i < lanes; i++) {
-                        if(i === Math.floor(frame / 70) % lanes) continue;
-                        const bullet = new EnemyBullet(canvas.width * (i + .5) / lanes, originY, 2.5 + this.phase * .2);
-                        bullet.v.x = 0; bullet.dmg = 8 + this.phase * 2; entities.epjs.push(bullet);
-                    }
-                }
-            }
-            drawTethers(color, count) {
-                if(!convoy) return;
-                ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.shadowColor = color; ctx.shadowBlur = 12;
-                for(let i = 0; i < count; i++) {
-                    const fromX = this.x + (i - (count - 1) / 2) * 44;
-                    ctx.beginPath(); ctx.moveTo(fromX, this.y + this.r * .35);
-                    ctx.quadraticCurveTo((fromX + convoy.x) / 2, convoy.y - 95 + Math.sin(frame / 11 + i) * 12, convoy.x, convoy.y - convoy.r * .35);
-                    ctx.stroke();
-                }
-                ctx.restore();
-            }
-        }
-
-        class PurifierBoss extends ChapterTwoBranchBoss {
-            constructor() {
-                super({ hp: 12000, color: '#ff304f', pickupType: 'overcharge', dialogueRoot: 'ch02.rebel_boss',
-                    objectives: ['DESTROY 3 LOCK NODES', 'DISABLE GUN BATTERIES // CLAIM OVERCHARGE', 'EXPOSED CORE // BREAK FINAL LOCK'],
-                    makeTargets: (boss, phase) => phase === 1
-                        ? [-58, 0, 58].map((offset, i) => new ChapterTwoBossTarget(boss, 'Lock Node ' + (i + 1), offset, 18, 550, '#ff304f'))
-                        : phase === 2 ? [-54, 0, 54].map((offset, i) => new ChapterTwoBossTarget(boss, 'Gun Battery ' + (i + 1), offset, 38, 700, '#fff2ee'))
-                        : [new ChapterTwoBossTarget(boss, 'Final Lock Core', 0, 20, 1200, '#ffffff')] });
-            }
-            draw() {
-                this.drawTethers('#ff304f', this.phase === 3 ? 1 : 3);
-                if(drawChapterTwoBossSprite('purifier', this.x, this.y, 270, 150)) {
-                    this.targets.forEach(target => target.draw());
-                    return;
-                }
-                ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#45111c'; ctx.strokeStyle = '#fff2ee'; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.moveTo(-112, -22); ctx.lineTo(-48, -72); ctx.lineTo(72, -55); ctx.lineTo(118, 8); ctx.lineTo(66, 72); ctx.lineTo(-88, 54); ctx.closePath(); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = '#ff304f'; ctx.fillRect(-70, -16, 140, 18); ctx.fillStyle = '#ffffff'; ctx.fillRect(-24, 12, 48, 24); ctx.restore();
-                this.targets.forEach(target => target.draw());
-            }
-        }
-
-        class RunnerBoss extends ChapterTwoBranchBoss {
-            constructor() {
-                super({ hp: 11000, color: '#f17a32', pickupType: 'intercept', dialogueRoot: 'ch02.empire_boss',
-                    objectives: ['CUT 3 GRAPPLE ANCHORS', 'DISABLE BOARDING BATTERIES // CLAIM INTERCEPT', 'DESTROY ENGINE CORE'],
-                    makeTargets: (boss, phase) => phase === 1
-                        ? [-62, 0, 62].map((offset, i) => new ChapterTwoBossTarget(boss, 'Grapple Anchor ' + (i + 1), offset, 22, 500, '#f17a32'))
-                        : phase === 2 ? [-48, 48].map((offset, i) => new ChapterTwoBossTarget(boss, 'Boarding Battery ' + (i + 1), offset, 40, 780, '#ffbf72'))
-                        : [new ChapterTwoBossTarget(boss, 'Engine Core', 0, 22, 1300, '#fff0d5')] });
-            }
-            draw() {
-                this.drawTethers('#f17a32', this.phase === 3 ? 1 : 2);
-                if(drawChapterTwoBossSprite('runner', this.x, this.y, 250, 145)) {
-                    this.targets.forEach(target => target.draw());
-                    return;
-                }
-                ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#502719'; ctx.strokeStyle = '#ffbf72'; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.moveTo(-118, 5); ctx.lineTo(-54, -64); ctx.lineTo(84, -48); ctx.lineTo(120, 18); ctx.lineTo(38, 76); ctx.lineTo(-94, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = '#f17a32'; ctx.fillRect(-78, -10, 154, 16); ctx.fillStyle = '#ffbf72'; ctx.fillRect(-18, 15, 36, 29); ctx.restore();
-                this.targets.forEach(target => target.draw());
-            }
-        }
-
-        // Integration surface for the later branch-flow task. These functions are inert until that task calls them.
-        function startChapterTwoBoss(selectedBranch) {
-            const resolvedBranch = selectedBranch === 'protection' ? 'protection' : 'execute';
-            chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
-            chapterTwoBoss = resolvedBranch === 'protection' ? new PurifierBoss() : new RunnerBoss();
-            updateChapterTwoBossObjectives();
-            return chapterTwoBoss;
-        }
-
-        function startChapterTwoVictory() {
-            if(!chapterTwoBoss || !branch || chapterTwoVictory) return;
-            const bossSnapshot = { x: chapterTwoBoss.x, y: chapterTwoBoss.y, r: chapterTwoBoss.r, color: chapterTwoBoss.config.color };
-            chapterTwoBoss = null;
-            entities.ens = [];
-            entities.epjs = [];
-            chapterTwoVictory = { branch, frame: 0, boss: bossSnapshot, signal: 1 };
-            state = 'CH02_VICTORY';
-            showDialogueId(branch === 'protection' ? 'ch02.rebel_boss.defeat' : 'ch02.empire_boss.defeat');
-        }
-
-        function updateChapterTwoVictory() {
-            if(!chapterTwoVictory) return;
-            const victory = chapterTwoVictory;
-            victory.frame++;
-            const t = Math.min(1, victory.frame / 150);
-            const boss = victory.boss;
-            ctx.save();
-            if(victory.branch === 'protection') {
-                const beamAlpha = Math.max(0, 1 - t * 1.6);
-                ctx.strokeStyle = `rgba(255, 48, 79, ${beamAlpha})`;
-                ctx.lineWidth = 4;
-                ctx.shadowColor = '#ff304f'; ctx.shadowBlur = 16;
-                ctx.beginPath(); ctx.moveTo(boss.x - 32, boss.y + boss.r * .3); ctx.lineTo(convoy.x - 18, convoy.y - 42); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(boss.x + 32, boss.y + boss.r * .3); ctx.lineTo(convoy.x + 18, convoy.y - 42); ctx.stroke();
-                if(victory.frame < 55) {
-                    ctx.strokeStyle = '#fff2ee'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(convoy.x - 24, convoy.y - 50); ctx.lineTo(convoy.x + 24, convoy.y - 22); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(convoy.x + 24, convoy.y - 50); ctx.lineTo(convoy.x - 24, convoy.y - 22); ctx.stroke();
-                }
-                convoy.y -= 3.7;
-                convoy.x += Math.sin(victory.frame / 12) * .45;
-                convoy.draw();
-                ctx.fillStyle = 'rgba(128, 230, 245, .8)';
-                ctx.fillRect(convoy.x - 5, convoy.y + convoy.r * .75, 10, 34);
-            } else {
-                victory.signal = Math.max(0, 1 - t * 1.25);
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, 1 - t * .7);
-                if(!drawChapterTwoBossSprite('runner', boss.x, boss.y + victory.frame * 3.1, 250, 145)) {
-                    ctx.translate(boss.x, boss.y + victory.frame * 3.1);
-                    ctx.fillStyle = '#502719'; ctx.strokeStyle = '#ffbf72'; ctx.lineWidth = 3;
-                    ctx.beginPath(); ctx.moveTo(-118, 5); ctx.lineTo(-54, -64); ctx.lineTo(84, -48); ctx.lineTo(120, 18); ctx.lineTo(38, 76); ctx.lineTo(-94, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
-                }
-                ctx.restore();
-                convoy.draw();
-                ctx.strokeStyle = `rgba(128, 230, 245, ${victory.signal})`; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.arc(convoy.x, convoy.y, convoy.r + 18 + Math.sin(victory.frame / 7) * 5, 0, Math.PI * 2); ctx.stroke();
-            }
-            ctx.restore();
-            if(victory.frame >= 150) showChapterTwoOutro();
-        }
-
-        function updateChapterTwoBoss() {
-            if(!chapterTwoBoss || chapterTwoBoss.defeated) return;
-            chapterTwoBoss.update();
-            updateChapterTwoBossObjectives();
-        }
-
-        function damageChapterTwoBoss(projectile) {
-            if(!chapterTwoBoss) return false;
-            const hit = chapterTwoBoss.damage(projectile);
-            if(hit) updateChapterTwoBossObjectives();
-            return hit;
-        }
-
-        function isChapterTwoBossDefeated() { return !!chapterTwoBoss && chapterTwoBoss.defeated; }
-
-        function chapterTwoPlayerDamageMultiplier() {
-            return chapter === 2 && chapterTwoBossBuff.overcharge > 0 ? 2 : 1;
-        }
-
-        function useChapterTwoIntercept() {
-            if(state !== 'CH02_PLAY' || !chapterTwoBossBuff.interceptReady) return false;
-            const cleared = entities.epjs.length;
-            chapterTwoBossBuff.interceptReady = false;
-            entities.epjs = [];
-            if(player) explode(player.x, player.y, '#ffbf72');
-            showToast(`INTERCEPT CLEAR // ${cleared} HOSTILE ROUNDS REMOVED`);
-            updateAbilityHud();
-            updatePilotCommHud();
-            return true;
-        }
-
-        function updateChapterTwoBossObjectives() {
-            if(!chapterTwoBoss) return;
-            const remaining = chapterTwoBoss.targets.filter(target => target.active).length;
-            setMission(CHAPTER_TWO, `BOSS P${chapterTwoBoss.phase} // ${chapterTwoBoss.objective} // TARGETS ${remaining}`);
-            document.getElementById('comm-text').innerText = `分支交战目标：${chapterTwoBoss.objective}`;
-        }
-
         class Boss {
             constructor() {
                 this.x = canvas.width/2; this.y = -140; this.r = 110; this.hp = 32000; this.maxHp = 32000;
@@ -1440,7 +1163,7 @@
                 this.protectTimer--;
                 if(this.protectTimer <= 0) {
                     this.protectTimer = 260;
-                    showDialogue('REBEL_COMMANDER', bossProtectLine());
+                    showCombatBark('REBEL_COMMANDER', bossProtectLine());
                     this.guardBurst();
                 }
                 this.maneuverTimer--;
@@ -1594,7 +1317,7 @@
                 }
                 ctx.restore();
                 if(this.t % 10 === 0) explode(this.x + (Math.random()-0.5)*220, this.y + (Math.random()-0.5)*80, '#ff7a2c');
-                if(this.t === 30) showDialogue('SYSTEM', '目标动力炉断连。残骸正在偏离逃生舱航线。');
+                if(this.t === 30) showCombatBark('SYSTEM', '目标动力炉断连。残骸正在偏离逃生舱航线。');
                 return this.t > 190;
             }
         }
@@ -1649,38 +1372,99 @@
         function showPierceFeedback(projectile) {
             if(!projectile.p || pierceFeedbackCooldown > 0) return;
             pierceFeedbackCooldown = 28;
-            showToast('穿甲命中 // ARMOR PIERCED');
+            showToast('穿甲命中');
         }
 
-        function showDialogue(name, text) {
-            const box = document.getElementById('dialogue-box');
-            const avatar = document.getElementById('dialogue-avatar');
-            document.getElementById('dialogue-name').innerText = name;
-            const localizedName = name === 'REBEL_COMMANDER' ? '叛军指挥官' : (name === 'SYSTEM' ? '指挥频道' : (name === 'PLAYER' ? PILOTS[pKey].name : name));
-            document.getElementById('dialogue-name').innerText = localizedName;
-            const portraitKey = name === 'REBEL_COMMANDER' ? 'rebel' : (name === 'SYSTEM' ? 'command' : pKey);
+        function resolveDialoguePresentation(name, portrait = '') {
+            const legacyPortraits = { PLAYER: pKey, SYSTEM: 'command', REBEL_COMMANDER: 'rebel' };
+            const portraitKey = portrait || legacyPortraits[name] || 'system';
+            const labels = { quartermaster: '📟', scanner: '🛰', mara: '🦋', system: '▣', command: '▣', rebel: '⚠' };
+            return { localizedName: name === 'PLAYER' ? PILOTS[pKey].name : name, portraitKey, fallbackLabel: labels[portraitKey] || '▣' };
+        }
+
+        function setDialoguePortrait(element, portraitKey, fallbackLabel) {
             const portrait = portraitKey && SPRITES.portraits && SPRITES.portraits[portraitKey];
-            const commAvatar = document.getElementById('comm-avatar');
-            const commSpeaker = document.getElementById('comm-speaker');
-            document.getElementById('comm-text').innerText = text;
-            commSpeaker.innerText = name === 'REBEL_COMMANDER' ? '未授权频道' : (name === 'SYSTEM' ? '指挥频道' : PILOTS[pKey].name);
-            if(isLoaded(portrait)) {
-                avatar.innerText = '';
-                avatar.style.backgroundImage = `url(${portrait.src})`;
-                avatar.style.backgroundSize = 'cover';
-                avatar.style.backgroundPosition = 'center';
-                commAvatar.innerText = '';
-                commAvatar.style.backgroundImage = `url(${portrait.src})`;
-            } else {
-                avatar.style.backgroundImage = '';
-                avatar.innerText = name === 'REBEL_COMMANDER' ? 'REBEL' : 'SYS';
-                commAvatar.style.backgroundImage = '';
-                commAvatar.innerText = name === 'REBEL_COMMANDER' ? 'REBEL' : 'SYS';
+            if(isLoaded(portrait)) { element.innerText = ''; element.style.backgroundImage = `url(${portrait.src})`; }
+            else { element.style.backgroundImage = ''; element.innerText = fallbackLabel; }
+        }
+
+        function renderDialogue(dialogue) {
+            const speaker = resolveDialoguePresentation(dialogue.speaker, dialogue.portrait);
+            const pilot = resolveDialoguePresentation(PILOTS[pKey].name, pKey);
+            document.getElementById('dialogue-name').innerText = speaker.localizedName;
+            document.getElementById('dialogue-pilot-name').innerText = PILOTS[pKey].name;
+            document.getElementById('dialogue-text').innerText = dialogue.text;
+            setDialoguePortrait(document.getElementById('dialogue-avatar'), speaker.portraitKey, speaker.fallbackLabel);
+            setDialoguePortrait(document.getElementById('dialogue-pilot-avatar'), pilot.portraitKey, pilot.fallbackLabel);
+            document.getElementById('dialogue-box').classList.add('show');
+        }
+
+        function enqueueDialogue(dialogue) {
+            if(!dialogue || !dialogue.text) return;
+            dlgQueue.push(dialogue);
+            if(state !== 'DIALOGUE') {
+                dialogueReturnState = state;
+                state = 'DIALOGUE';
+                renderDialogue(dlgQueue[0]);
             }
-            document.getElementById('dialogue-text').innerText = text;
-            box.classList.add('show');
-            clearTimeout(box._timer);
-            box._timer = setTimeout(() => box.classList.remove('show'), 5200);
+        }
+
+        function advanceDialogue() {
+            if(state !== 'DIALOGUE') return false;
+            dlgQueue.shift();
+            if(dlgQueue.length) { renderDialogue(dlgQueue[0]); return true; }
+            document.getElementById('dialogue-box').classList.remove('show');
+            state = dialogueReturnState || 'MENU';
+            dialogueReturnState = null;
+            const callbacks = dialogueDrainCallbacks;
+            dialogueDrainCallbacks = [];
+            callbacks.forEach(callback => callback());
+            return true;
+        }
+
+        function onDialogueQueueDrained(callback) {
+            if(state === 'DIALOGUE' || dlgQueue.length) dialogueDrainCallbacks.push(callback);
+            else callback();
+        }
+
+        function setDialogueReturnState(nextState) {
+            if(state === 'DIALOGUE') dialogueReturnState = nextState;
+            else state = nextState;
+        }
+
+        class GateObjective {
+            constructor(kind, label, x, y, hp = 90) {
+                this.kind = kind; this.label = label; this.x = x; this.y = y; this.r = kind === 'core' ? 17 : 28;
+                this.maxHp = hp; this.hp = hp; this.done = false; this.upload = 0;
+            }
+            damage(amount) {
+                if(this.done || this.kind === 'core' || this.kind === 'blackbox') return false;
+                this.hp = Math.max(0, this.hp - amount);
+                if(this.hp === 0) { this.done = true; explode(this.x, this.y, '#ffbd5c'); }
+                return this.done;
+            }
+            update() {
+                if(this.done) return;
+                if((this.kind === 'core' || this.kind === 'blackbox') && player && Math.hypot(player.x - this.x, player.y - this.y) < player.r + 34) {
+                    this.upload += this.kind === 'blackbox' ? 1.8 : 100;
+                    if(this.upload >= 100) { this.done = true; explode(this.x, this.y, '#80e6f5'); }
+                }
+                ctx.save(); ctx.translate(this.x, this.y);
+                const intact = Math.max(0, this.hp / this.maxHp);
+                ctx.fillStyle = this.kind === 'filter' ? '#194446' : this.kind === 'core' || this.kind === 'blackbox' ? '#315365' : '#4b2d25';
+                ctx.strokeStyle = this.kind === 'filter' ? '#a8f06a' : '#80e6f5'; ctx.lineWidth = 3;
+                if(this.kind === 'core' || this.kind === 'blackbox') { ctx.rotate(frame / 50); ctx.fillRect(-this.r, -this.r, this.r * 2, this.r * 2); }
+                else { ctx.beginPath(); ctx.moveTo(0,-this.r); ctx.lineTo(this.r,this.r); ctx.lineTo(-this.r,this.r); ctx.closePath(); ctx.fill(); }
+                ctx.stroke();
+                ctx.fillStyle = '#081014'; ctx.fillRect(-this.r, this.r + 9, this.r * 2, 5);
+                ctx.fillStyle = intact > .45 ? '#80e6f5' : '#ff8a5c'; ctx.fillRect(-this.r, this.r + 9, this.r * 2 * intact, 5);
+                ctx.restore();
+            }
+        }
+
+        function showCombatBark(name, text) {
+            const presentation = resolveDialoguePresentation(name);
+            showToast(`${presentation.localizedName}：${text}`);
         }
 
         function bossProtectLine() {
@@ -1714,34 +1498,32 @@
             if(bossDialogueLock) return;
             bossDialogueLock = true;
             const exchange = bossPhaseExchange(phase);
-            showDialogue('REBEL_COMMANDER', exchange.boss);
+            showCombatBark('REBEL_COMMANDER', exchange.boss);
             setTimeout(() => {
-                showDialogue('PLAYER', exchange.pilot);
+                showCombatBark('PLAYER', exchange.pilot);
                 setTimeout(() => { bossDialogueLock = false; }, 1200);
             }, 1500);
         }
 
-        function showTransition(title, text, duration = 900, onDone = null) {
+        function showTransition(title, text, duration = 900, onDone = null, timerGroup = null) {
             const screen = document.getElementById('transition-screen');
             document.getElementById('transition-title').innerText = title;
             document.getElementById('transition-text').innerText = text;
             screen.classList.add('show');
-            setTimeout(() => {
+            const timer = setTimeout(() => {
+                if(timerGroup) timerGroup.delete(timer);
                 screen.classList.remove('show');
                 if(onDone) onDone();
             }, duration);
+            if(timerGroup) timerGroup.add(timer);
         }
 
         function updateAbilityHud() {
             if(!player) return;
             const ready = player.abilityCharge >= 100;
             const abilityPill = document.getElementById('ability-pill');
-            const bossBonus = chapterTwoBossBuff.overcharge > 0
-                ? ` // OVERCHARGE x2 ${Math.ceil(chapterTwoBossBuff.overcharge / 60)}s`
-                : (chapterTwoBossBuff.interceptReady ? ' // INTERCEPT READY' : '');
             document.getElementById('ability-pill').innerText = `${PILOTS[pKey].ability}：${ready ? '就绪' : Math.floor(player.abilityCharge) + '%'} // 空格/双击触发`;
-            abilityPill.innerText += bossBonus;
-            abilityPill.style.color = chapterTwoBossBuff.overcharge > 0 ? '#ff8fa1' : (chapterTwoBossBuff.interceptReady || ready ? '#fff18a' : '#89f7ff');
+            abilityPill.style.color = ready ? '#fff18a' : '#89f7ff';
         }
 
         function updateBossHud() {
@@ -1771,17 +1553,12 @@
             chapter = 2;
             bgScrollY = 0;
             generateBackground();
-            branch = null;
             scansCollected = 0;
             chapterTwoWaves = 0;
             chapterFrame = 0;
             boss = null;
             bossSpawned = false;
             bossCrash = null;
-            chapterTwoBoss = null;
-            chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
-            chapterTwoVictory = null;
-            chapterTwoOutroShown = false;
             entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
             convoy = new ConvoyHauler();
             state = 'CH02_PLAY';
@@ -1809,58 +1586,65 @@
         }
 
         function ensureChapterTwoScanBeacon() {
-            if(chapter !== 2 || branch || scansCollected >= CHAPTER_TWO.scanTargets) return;
+            if(chapter !== 2 || scansCollected >= CHAPTER_TWO.scanTargets) return;
             if(chapterTwoWaves === 0 || entities.scanBeacons.some(beacon => !beacon.collected)) return;
             entities.scanBeacons.push(new ScanBeacon());
         }
 
-        function showChapterTwoChoice() {
-            if(state !== 'CH02_PLAY' || branch) return;
-            state = 'CH02_CHOICE';
-            showDialogueId('ch02.choice.order');
-            document.querySelector('.rogue-title').innerText = 'CONVOY_DECISION // B 区航线';
-            document.getElementById('rogue-note').innerText = '扫描记录确认货船载有平民。选择会立刻写入任务记录。';
-            document.getElementById('cards-container').innerHTML = `
-                <div class="upgrade-card card-rebel" onclick="chooseBranch('protection')" style="--ui-frame:url(${ASSET_PATHS.ui.moduleFrame})">
-                    <div class="branch-art" style="background-image:url(${ASSET_PATHS.ch02.ui.protect})"></div>
-                    <div class="card-type">[护航]</div>
-                    <div class="card-name">Protection</div>
-                    <div class="card-desc">维持护航编队，带货船穿过碎石航道。后果：失去巡逻队信任。</div>
-                </div>
-                <div class="upgrade-card card-empire" onclick="chooseBranch('execute')" style="--ui-frame:url(${ASSET_PATHS.ui.moduleFrame})">
-                    <div class="branch-art" style="background-image:url(${ASSET_PATHS.ch02.ui.execute})"></div>
-                    <div class="card-type">[封锁]</div>
-                    <div class="card-name">Execute</div>
-                    <div class="card-desc">交出货船坐标并接受巡逻队登检。后果：获得巡逻队通行许可。</div>
-                </div>`;
-            document.getElementById('rogue-screen').classList.remove('hidden');
+        function finishChapterTwoInvestigation() {
+            if(state !== 'CH02_PLAY') return;
+            const run = narrativeRun;
+            state = 'INTERLUDE';
+            showDialogueId('ch02.outro.' + pKey);
+            showTransition('黑匣已保存', '货单、生命读数和注销名单已写入离线黑匣。第 09 隔离关口发来塌方警报。', 2800, () => {
+                if(run === narrativeRun && (state === 'INTERLUDE' || dialogueReturnState === 'INTERLUDE')) startInterlude(run);
+            }, narrativeTimers);
         }
 
-        window.chooseBranch = function(nextBranch) {
-            if(branch || state !== 'CH02_CHOICE') return;
-            branch = nextBranch === 'protection' ? 'protection' : 'execute';
-            const branchEnemyType = branch === 'protection' ? 'ch02_drone' : 'ch02_interceptor';
-            entities.ens.forEach(enemy => { enemy.type = branchEnemyType; });
-            document.getElementById('rogue-screen').classList.add('hidden');
-            showDialogueId(branch === 'protection' ? 'ch02.choice.rebel' : 'ch02.choice.empire');
-            startChapterTwoBoss(branch);
-            state = 'CH02_PLAY';
-        };
-
-        function showChapterTwoOutro() {
-            if(chapterTwoOutroShown || !branch || !chapterTwoVictory) return;
-            chapterTwoOutroShown = true;
-            state = 'CH02_OUTRO';
-            const protectedConvoy = branch === 'protection';
-            document.querySelector('.rogue-title').innerText = protectedConvoy
-                ? 'CHAPTER_TWO_COMPLETE // 跃迁窗口已打开'
-                : 'CHAPTER_TWO_COMPLETE // 封锁航线已稳定';
-            document.getElementById('rogue-note').innerText = protectedConvoy
-                ? '最后一束封锁光已熄灭，货船正在跃迁离场。第三章预告：救援浮标指向前进基地外环的地下航道。'
-                : 'Runner 已撤回封锁线，货船信号正在淡出。第三章预告：巡逻许可将把你送入前进基地的内侧监听网。';
-            document.getElementById('cards-container').innerHTML = '<button onclick="restartRun()">重新开始完整任务</button>';
-            document.getElementById('rogue-screen').classList.remove('hidden');
+        function scheduleNarrative(callback, delay, run = narrativeRun) {
+            const timer = setTimeout(() => {
+                narrativeTimers.delete(timer);
+                if(run === narrativeRun) callback();
+            }, delay);
+            narrativeTimers.add(timer);
         }
+
+        function startInterlude(run = narrativeRun) {
+            if(run !== narrativeRun || (state !== 'INTERLUDE' && dialogueReturnState !== 'INTERLUDE')) return;
+            showDialogueId('interlude.rust');
+            showToast('锈蚀风险：冷却液污染正在封锁门下方蔓延');
+            scheduleNarrative(() => {
+                showDialogueId('interlude.location');
+                showToast('鲍勃的未授权坐标包：已收到塌方区位置');
+            }, 1700, run);
+            scheduleNarrative(() => startChapterFive(run), 3600, run);
+        }
+
+        function startChapterFive(run = narrativeRun) {
+            if(run !== narrativeRun || (state !== 'INTERLUDE' && dialogueReturnState !== 'INTERLUDE')) return;
+            chapter = 5; chapterFrame = 0;
+            entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
+            gate09 = { waves: 0, choiceShown: false, shelter: new GateObjective('shelter', '第 09 避难所', canvas.width / 2, canvas.height * .27, CHAPTER_FIVE.shelterHp), targets: [] };
+            setDialogueReturnState('CH05_PLAY'); showDialogueId('ch05.intro'); updateGate09Hud();
+            showTransition('第 09 隔离关口', '塌方警报已确认，避难所外环需要立刻防守。', 1200, spawnGateWave);
+        }
+        function updateGate09Hud() { if(!gate09) return; const integrity = Math.ceil(gate09.shelter.hp / gate09.shelter.maxHp * 100); setMission(CHAPTER_FIVE, `波次 ${gate09.waves}/${CHAPTER_FIVE.targetWaves} // ${state === 'ENDING_PLAY' ? gateObjectiveText() : `避难所完整度 ${integrity}%`}`); document.getElementById('comm-text').innerText = state === 'ENDING_PLAY' ? gateObjectiveText() : `第 09 避难所完整度 ${integrity}%`; }
+        function spawnGateWave() { if(!gate09 || state !== 'CH05_PLAY' || gate09.waves >= CHAPTER_FIVE.targetWaves) return; const mixes = [[['scout','ch05_drone'],['scout','ch05_rust']],[['elite','ch05_rust'],['scout','ch05_drone'],['scout','ch05_rust']],[['elite','ch05_drone'],['elite','ch05_rust'],['scout','ch05_drone']]]; for(const [kind,type] of mixes[gate09.waves]) { const enemy = new Enemy(kind); enemy.type = type; enemy.damage += 3; entities.ens.push(enemy); } gate09.waves++; updateGate09Hud(); }
+        function renderGateChoices() { const actions = document.getElementById('gate-choice-actions'); const choices=[{id:'seal_gate',label:'守住医疗门',cost:'阻止爆破船，但门内部分人将被永久隔离。'},{id:'break_blockade',label:'打开封锁',cost:'为船队撕开窗口，但锈蚀可能进入主航道。'},{id:'deep_rock',label:'救援塌方区',cost:'建立临时过滤舱，但无法阻止全部封门或冲关。'}]; actions.innerHTML=choices.map(choice=>`<button type="button" data-route="${choice.id}"><strong>${choice.label}</strong><span class="gate-choice-cost">代价：${choice.cost}</span></button>`).join(''); actions.querySelectorAll('[data-route]').forEach(button=>button.addEventListener('click',event=>{ event.stopPropagation(); chooseGateRoute(button.dataset.route); })); actions.classList.add('show'); actions.querySelector('button')?.focus(); }
+        function showGateChoice() { if(state !== 'CH05_PLAY' || !gate09 || gate09.choiceShown) return; gate09.choiceShown = true; state = 'CH05_CHOICE'; showDialogueId('ch05.mara'); onDialogueQueueDrained(renderGateChoices); }
+        function chooseGateRoute(routeId) { if(state !== 'CH05_CHOICE' || !['seal_gate','break_blockade','deep_rock'].includes(routeId)) return; route=routeId; const actions=document.getElementById('gate-choice-actions'); actions.classList.remove('show'); actions.innerHTML=''; showDialogueId(`ch05.choice.${routeId}`); onDialogueQueueDrained(()=>startEnding(routeId)); }
+        function startEnding(routeId) { if(!gate09 || routeId !== route) return; state='ENDING_PLAY'; chapterFrame=0; entities.pjs=[]; entities.epjs=[]; entities.ens=[]; entities.missiles=[]; const rows={seal_gate:{ending:'empire',label:'医疗补给门',kind:'supply',tasks:['weapon','weapon','weapon']},break_blockade:{ending:'rebel',label:'撤离船队',kind:'convoy',tasks:['lock','lock','lock']},deep_rock:{ending:'deep_rock',label:'临时过滤舱',kind:'filter',tasks:['core','core','blackbox']}}[routeId]; gate09.ending=rows.ending; gate09.objectiveLabel=rows.label; gate09.targets=[new GateObjective(rows.kind,rows.label,canvas.width/2,canvas.height*.3,170),...rows.tasks.map((kind,i)=>new GateObjective(kind,`${['火力节点','封锁节点','过滤核心','黑匣终端'][['weapon','lock','core','blackbox'].indexOf(kind)]} ${i+1}`,canvas.width*(.3+i*.2),canvas.height*(kind==='core'?.42:.16),100))]; showDialogueId(`ending.${rows.ending}.intro`); onDialogueQueueDrained(spawnEndingEnemies); updateGate09Hud(); }
+        function spawnEndingEnemies() { if(!gate09 || state !== 'ENDING_PLAY') return; for(let i=0;i<(route==='deep_rock'?3:4);i++) { const enemy=new Enemy(i===3?'elite':'scout'); enemy.type=i%2?'ch05_rust':'ch05_drone'; entities.ens.push(enemy); } }
+        function gateObjectiveText() { const targets=gate09.targets||[]; const protector=targets[0]; const done=targets.slice(1).filter(target=>target.done).length; return `${gate09.objectiveLabel} ${Math.ceil(protector.hp/protector.maxHp*100)}% // 任务 ${done}/${Math.max(0,targets.length-1)}`; }
+        function finishEnding() { if(!gate09 || state!=='ENDING_PLAY') return; state='ENDING_RESULT'; showDialogueId(`ending.${gate09.ending}.result`); onDialogueQueueDrained(()=>{ const actions=document.getElementById('gate-choice-actions'); actions.innerHTML='<button type="button" data-route="restart"><strong>重新部署</strong><span class="gate-choice-cost">保留驾驶员，重新开始本次任务。</span></button>'; actions.querySelector('[data-route="restart"]').onclick=()=>location.reload(); actions.classList.add('show'); }); }
+        function failGate09() { if(state!=='CH05_PLAY' && state!=='ENDING_PLAY') return; state='CH05_FAILED'; document.querySelector('.rogue-title').innerText='第 09 隔离关口失守'; document.getElementById('rogue-note').innerText='重试会保留当前驾驶员，并重置本关战斗状态。'; document.getElementById('cards-container').innerHTML='<button onclick="restartGate09()">重试第 09 隔离关口</button>'; document.getElementById('rogue-screen').classList.remove('hidden'); }
+        function resetGate09Build() {
+            mods = { pierce: false, laser: false, shield: 0, spread: 0, haste: 1, magnet: 40, armor: 0 };
+            cargo = []; equippedRogue = {}; salvage = 0; dropsGiven = 0;
+            enemiesDestroyed = 0; chapterCleared = false; boss = null; bossSpawned = false; route = null;
+            updateLoadoutHud();
+        }
+        window.restartGate09=function(){ document.getElementById('rogue-screen').classList.add('hidden'); resetGate09Build(); if(player){player.maxHp=PILOTS[pKey].maxHp;player.hp=player.maxHp;player.exp=0;player.lvl=1;player.maxExp=5;player.abilityCharge=0;player.abilityActive=false;player.x=player.tx=canvas.width/2;player.y=player.ty=canvas.height*.8;player.invuln=90;updatePlayerHpHud();updateAbilityHud();document.getElementById('exp-bar').style.width='0%';} state='INTERLUDE';startChapterFive(narrativeRun); };
 
         function failChapterTwo() {
             if(state !== 'CH02_PLAY') return;
@@ -1889,13 +1673,17 @@
         function resetRun() {
             openingTimers.forEach(timer => clearTimeout(timer));
             openingTimers = [];
+            narrativeRun++;
+            narrativeTimers.forEach(timer => clearTimeout(timer));
+            narrativeTimers.clear();
+            dlgQueue = []; dialogueReturnState = null; dialogueDrainCallbacks = [];
+            document.getElementById('dialogue-box').classList.remove('show');
             rescuePod = null; rescueScanProgress = 0; openingFrame = 0;
             frame = 0; score = 0; chapterFrame = 0; boss = null; bossSpawned = false; chapterCleared = false; wavesSpawned = 0; enemiesDestroyed = 0; lastEliteIndex = -1;
-            chapter = 1; branch = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0;
+            chapter = 1; route = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0;
+            gate09 = null;
             bgScrollY = 0;
             generateBackground();
-            chapterTwoBoss = null; chapterTwoBossBuff = { overcharge: 0, interceptReady: false };
-            chapterTwoVictory = null; chapterTwoOutroShown = false;
             bossDialogueLock = false; bossCrash = null; endingStarted = false;
             combatBarkCooldown = 0;
             entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
@@ -1911,6 +1699,9 @@
             document.getElementById('comm-pilot').innerText = '未部署';
             document.getElementById('comm-ability').innerText = '主动技能：准备中';
             document.getElementById('comm-text').innerText = '信号压低。A 区有断续搜救信标，先确认目标，再开火。';
+            const gateChoices = document.getElementById('gate-choice-actions');
+            gateChoices.classList.remove('show');
+            gateChoices.innerHTML = '';
         }
 
         function updateChapterOneOpeningHud() {
@@ -1929,15 +1720,16 @@
             openingTimers.push(setTimeout(() => showDialogueId('ch01.pilot_status'), 1100));
             openingTimers.push(setTimeout(() => showDialogueId('ch01.mission_brief'), 2900));
             openingTimers.push(setTimeout(() => showDialogueId('ch01.distress_signal'), 4700));
-            openingTimers.push(setTimeout(() => { rescuePod = new RescuePod(); state = 'CH01_RESCUE'; updateChapterOneOpeningHud(); }, 5200));
+            openingTimers.push(setTimeout(() => { rescuePod = new RescuePod(); setDialogueReturnState('CH01_RESCUE'); updateChapterOneOpeningHud(); }, 5200));
         }
 
         function finishChapterOneOpening() {
             openingTimers.forEach(timer => clearTimeout(timer)); openingTimers = [];
-            rescuePod = null; showDialogueId('ch01.rescue_order');
+            rescuePod = null;
             setMission(CHAPTER_ONE, `A 区小行星带 // 波次 0/${CHAPTER_ONE.targetWavesBeforeBoss}`);
             document.getElementById('comm-wave').innerText = `0/${CHAPTER_ONE.targetWavesBeforeBoss}`;
             chapterFrame = 0; state = 'PLAYING';
+            showDialogueId('ch01.rescue_order');
         }
 
         function updateChapterOneOpening() {
@@ -2072,11 +1864,6 @@
             const info = PILOTS[pKey];
             document.getElementById('comm-pilot').innerText = info.name;
             document.getElementById('comm-ability').innerText = `主动技能：${info.ability} // ${player.abilityCharge >= 100 ? '就绪' : Math.floor(player.abilityCharge) + '%'}`;
-            if(chapterTwoBossBuff.overcharge > 0) {
-                document.getElementById('comm-ability').innerText += ` // OVERCHARGE x2 ${Math.ceil(chapterTwoBossBuff.overcharge / 60)}s`;
-            } else if(chapterTwoBossBuff.interceptReady) {
-                document.getElementById('comm-ability').innerText += ' // INTERCEPT READY';
-            }
             document.getElementById('comm-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
             const commAvatar = document.getElementById('comm-pilot-avatar');
             const hudPortrait = SPRITES.portraits && SPRITES.portraits[pKey];
@@ -2094,7 +1881,7 @@
             document.getElementById('boss-frame').classList.add('hidden');
             if(victory) {
                 salvage = cargo.reduce((sum, item) => sum + (item.id === 'mix_blackbox' ? 18 : 12), 24);
-                showTransition('CHAPTER_CLEAR', '缝合航母解体。救援信标仍在它残骸背后闪烁。', 1100, showChapterDialogue);
+                showTransition('航母已失能', '缝合航母解体。救援信标仍在它残骸背后闪烁。', 1100, showChapterDialogue);
             } else {
                 document.getElementById('rogue-note').innerText = '战机被击毁。第一关纵切从章节开头重新部署。';
                 document.getElementById('cards-container').innerHTML = `<button onclick="restartRun()">重新部署</button>`;
@@ -2172,6 +1959,53 @@
             document.querySelector('.rogue-title').innerText = 'TACTICAL_REFIT_READY // 选择改装路线';
             document.getElementById('rogue-note').innerText = '战斗暂停。选择一项模块后继续推进第一章。';
             state = 'PLAYING';
+        }
+
+        function updateGateCombat() {
+            if(!gate09 || !player) return;
+            chapterFrame++;
+            if(state === 'CH05_PLAY' && gate09.waves < CHAPTER_FIVE.targetWaves && entities.ens.length === 0 && chapterFrame % CHAPTER_FIVE.waveIntervalFrames === 0) spawnGateWave();
+            if(state === 'ENDING_PLAY' && entities.ens.length === 0 && chapterFrame % 140 === 0 && !gate09.targets.every(target => target.done || ['supply', 'convoy', 'filter'].includes(target.kind))) spawnEndingEnemies();
+            const protectedTarget = state === 'CH05_PLAY' ? gate09.shelter : gate09.targets.find(target => ['supply', 'convoy', 'filter'].includes(target.kind));
+            gate09.shelter.update();
+            (gate09.targets || []).forEach(target => target.update());
+            entities.ens.forEach(enemy => {
+                enemy.update();
+                entities.pjs.forEach((projectile, index) => {
+                    if(!enemy.dead && !projectile.hit.has(enemy) && projectileHits(projectile, enemy)) {
+                        enemy.hp -= projectile.dmg; projectile.hit.add(enemy); explode(projectile.x, projectile.y, projectile.c);
+                        if(!projectile.p) entities.pjs.splice(index, 1);
+                        if(enemy.hp <= 0) killEnemy(enemy);
+                    }
+                });
+                entities.missiles.forEach((missile, index) => {
+                    if(!enemy.dead && Math.hypot(missile.x - enemy.x, missile.y - enemy.y) < enemy.r + missile.r) { enemy.hp -= missile.dmg; entities.missiles.splice(index, 1); if(enemy.hp <= 0) killEnemy(enemy); }
+                });
+                if(!enemy.dead && protectedTarget && Math.hypot(enemy.x - protectedTarget.x, enemy.y - protectedTarget.y) < enemy.r + protectedTarget.r) { protectedTarget.damage(enemy.damage); enemy.dead = true; explode(enemy.x, enemy.y, '#ff8a5c'); }
+                else if(!enemy.dead && Math.hypot(player.x - enemy.x, player.y - enemy.y) < player.r + enemy.r) player.damage(enemy.damage);
+            });
+            if(state === 'ENDING_PLAY') {
+                // The first target is protected by the player, never a player-fire target.
+                (gate09.targets || []).slice(1).forEach(target => {
+                    entities.pjs.forEach((projectile, index) => {
+                        if(!target.done && projectileHits(projectile, target) && target.damage(projectile.dmg) && !projectile.p) entities.pjs.splice(index, 1);
+                    });
+                });
+            }
+            entities.epjs.forEach((bullet, index) => {
+                bullet.update();
+                if(protectedTarget && Math.hypot(bullet.x - protectedTarget.x, bullet.y - protectedTarget.y) < bullet.r + protectedTarget.r) { protectedTarget.damage(bullet.dmg); entities.epjs.splice(index, 1); }
+                else if(Math.hypot(player.x - bullet.x, player.y - bullet.y) < player.r + bullet.r) { player.damage(bullet.dmg); entities.epjs.splice(index, 1); }
+            });
+            entities.pjs.forEach(projectile => projectile.update()); entities.missiles.forEach(missile => missile.update()); entities.particles.forEach(particle => particle.update()); player.update();
+            entities.ens = entities.ens.filter(enemy => enemy.hp > 0 && !enemy.dead); entities.pjs = entities.pjs.filter(projectile => projectile.y > -220 && projectile.y < canvas.height + 80); entities.epjs = entities.epjs.filter(bullet => bullet.y < canvas.height + 80); entities.missiles = entities.missiles.filter(missile => missile.life > 0); entities.particles = entities.particles.filter(particle => particle.a > 0);
+            if(protectedTarget && protectedTarget.hp <= 0) failGate09();
+            if(state === 'CH05_PLAY' && gate09.waves === CHAPTER_FIVE.targetWaves && entities.ens.length === 0 && entities.epjs.length === 0) showGateChoice();
+            if(state === 'ENDING_PLAY') {
+                const tasks = gate09.targets.filter(target => !['supply', 'convoy', 'filter'].includes(target.kind));
+                if(tasks.every(target => target.done) && entities.ens.length === 0) finishEnding();
+            }
+            updateGate09Hud();
         }
 
         function loop() {
@@ -2290,7 +2124,7 @@
                         bossCrash = new BossCrash(boss);
                         boss = null;
                         state = 'BOSS_CRASH';
-                        showDialogue('SYSTEM', '战报开始上传：目标残骸正在下坠，航线后方的逃生舱已经脱离炮火。');
+                        showCombatBark('SYSTEM', '战报开始上传：目标残骸正在下坠，航线后方的逃生舱已经脱离炮火。');
                     }
                 }
 
@@ -2313,20 +2147,18 @@
                 entities.particles = entities.particles.filter(p=>p.a>0);
             } else if(state === 'CH02_PLAY') {
                 chapterFrame++;
-                const chapterTwoBossActive = !!chapterTwoBoss && !isChapterTwoBossDefeated();
-                if(!chapterTwoBossActive && !branch && chapterTwoWaves < CHAPTER_TWO.targetWaves && chapterFrame % CHAPTER_TWO.waveIntervalFrames === 0) {
+                if(chapterTwoWaves < CHAPTER_TWO.targetWaves && chapterFrame % CHAPTER_TWO.waveIntervalFrames === 0) {
                     spawnChapterTwoWave();
                 }
 
                 drawChapterTwoScanCorridor();
                 convoy.update();
-                if(chapterTwoBossActive) updateChapterTwoBoss();
                 entities.ens.forEach((e, i) => {
                     e.update();
                     entities.pjs.forEach((pj, j) => {
                         if(e.dead || pj.hit.has(e)) return;
                         if(projectileHits(pj, e)) {
-                            e.hp -= pj.dmg * chapterTwoPlayerDamageMultiplier();
+                            e.hp -= pj.dmg;
                             pj.hit.add(e);
                             explode(pj.x, pj.y, pj.c);
                             showPierceFeedback(pj);
@@ -2337,7 +2169,7 @@
                     entities.missiles.forEach((m, j) => {
                         if(e.dead) return;
                         if(Math.hypot(m.x - e.x, m.y - e.y) < e.r + m.r) {
-                            e.hp -= m.dmg * chapterTwoPlayerDamageMultiplier();
+                            e.hp -= m.dmg;
                             explode(m.x, m.y, m.c);
                             entities.missiles.splice(j, 1);
                             if(e.hp <= 0) killEnemy(e);
@@ -2364,28 +2196,15 @@
                 });
                 entities.epjs.forEach((b, i) => {
                     b.update();
-                    if(chapterTwoBossActive && Math.hypot(convoy.x - b.x, convoy.y - b.y) < convoy.r + b.r) {
+                    if(Math.hypot(convoy.x - b.x, convoy.y - b.y) < convoy.r + b.r) {
                         const destroyed = convoy.damage(b.dmg);
                         entities.epjs.splice(i, 1);
-                        updateChapterTwoBossObjectives();
                         if(destroyed) failChapterTwo();
                     } else if(Math.hypot(player.x - b.x, player.y - b.y) < player.r + b.r) {
                         player.damage(b.dmg);
                         entities.epjs.splice(i, 1);
                     }
                 });
-                if(chapterTwoBossActive) {
-                    entities.pjs.forEach((pj, j) => {
-                        if(!pj.p && pj.hit.size > 0) return;
-                        if(damageChapterTwoBoss(pj)) {
-                            if(!pj.p) entities.pjs.splice(j, 1);
-                        }
-                    });
-                    entities.missiles.forEach((m, j) => {
-                        if(damageChapterTwoBoss(m)) entities.missiles.splice(j, 1);
-                    });
-                    if(isChapterTwoBossDefeated()) startChapterTwoVictory();
-                }
                 entities.pjs.forEach(p => p.update());
                 entities.missiles.forEach(m => m.update());
                 entities.particles.forEach(p => p.update());
@@ -2398,13 +2217,11 @@
                 entities.scanBeacons = entities.scanBeacons.filter(beacon => !beacon.collected);
                 entities.heals = entities.heals.filter(h => !h.collected && h.life > 0);
                 entities.particles = entities.particles.filter(p => p.a > 0);
-                if(!chapterTwoBoss && !branch && chapterTwoWaves === CHAPTER_TWO.targetWaves && scansCollected === CHAPTER_TWO.scanTargets && entities.ens.length === 0) {
-                    showChapterTwoChoice();
+                if(chapterTwoWaves === CHAPTER_TWO.targetWaves && scansCollected === CHAPTER_TWO.scanTargets && entities.ens.length === 0 && entities.epjs.length === 0) {
+                    finishChapterTwoInvestigation();
                 }
-            } else if(state === 'CH02_VICTORY') {
-                updateChapterTwoVictory();
-                entities.particles.forEach(p => p.update());
-                entities.particles = entities.particles.filter(p => p.a > 0);
+            } else if(state === 'CH05_PLAY' || state === 'ENDING_PLAY') {
+                updateGateCombat();
             } else if (state === 'BOSS_CRASH') {
                 if(bossCrash) {
                     const done = bossCrash.update();
@@ -2460,16 +2277,20 @@
             generateBackground(); // 初始化预渲染背景
             player = new Player();
             state = 'TRANSITION';
-            showTransition('DEPLOY_TO_SECTOR_A', `机库闸门开启。${info.shipName} 正在切入 A 区小行星带，前方有微弱搜救信号。`, 1000, () => {
+            showTransition('进入 A 区', `机库闸门开启。${info.shipName} 正在切入 A 区小行星带，前方有微弱搜救信号。`, 1000, () => {
                 beginChapterOneOpening();
             });
             loop();
         };
 
-        window.onmousemove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.clientX; player.ty=e.clientY; }};
-        window.ontouchmove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.touches[0].clientX; player.ty=e.touches[0].clientY-60; e.preventDefault();} };
-        window.onkeydown = e => { if(e.code === 'Space' && player && !useChapterTwoIntercept()) player.useAbility(); };
-        window.ondblclick = () => { if(player && !useChapterTwoIntercept()) player.useAbility(); };
+        window.onmousemove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH05_PLAY' || state==='ENDING_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.clientX; player.ty=e.clientY; }};
+        window.ontouchmove = e => { if(state==='PLAYING' || state==='CH02_PLAY' || state==='CH05_PLAY' || state==='ENDING_PLAY' || state==='CH01_BRIEFING' || state==='CH01_RESCUE'){ player.tx=e.touches[0].clientX; player.ty=e.touches[0].clientY-60; e.preventDefault();} };
+        document.getElementById('dialogue-box').addEventListener('click', advanceDialogue);
+        window.onkeydown = e => {
+            if(state === 'DIALOGUE' && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); advanceDialogue(); return; }
+            if(e.code === 'Space' && player) player.useAbility();
+        };
+        window.ondblclick = () => { if(player) player.useAbility(); };
 
     </script>
 </body>
