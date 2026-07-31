@@ -57,6 +57,12 @@ if (forbiddenLegacyFlow.some(pattern => pattern.test(source))) {
 if (/#story-choice-screen\b|\.story-choice-panel\b|id=["']story-choice-screen["']/.test(source)) {
     throw new Error('Obsolete story choice overlay remains');
 }
+if (/\bfunction\s+renderStoryChoice\s*\(|\brenderStoryChoice\s*=/.test(source)) {
+    throw new Error('Obsolete Gate choice renderer remains');
+}
+if (!/id=["']gate-choice-actions["']/.test(source)) {
+    throw new Error('Missing Gate dialogue action container: #gate-choice-actions');
+}
 
 const englishGateLabels = [
     'GATE_09', 'GATE 09', 'SHELTER 09', 'OPEN CHANNEL', 'MEDICAL SUPPLY',
