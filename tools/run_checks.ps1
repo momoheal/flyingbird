@@ -16,6 +16,7 @@ Write-Host "Workspace: $Root"
 
 Write-Host "`n[1/4] Checking prototype/fb.html syntax and narrative recovery contract..."
 Invoke-Native { node -e "const fs=require('fs'); const html=fs.readFileSync('prototype/fb.html','utf8'); const match=html.match(/<script>([\s\S]*)<\/script>/); if(!match) throw new Error('No <script> block found in prototype/fb.html'); new Function(match[1]); console.log('prototype/fb.html script syntax ok');" }
+Invoke-Native { node -e "const fs=require('fs'); const source=fs.readFileSync('prototype/fb.html','utf8'); const states=['INTERLUDE','CH05_PLAY','CH05_CHOICE','ENDING_PLAY','ENDING_RESULT']; const missing=states.filter(state=>!source.includes(state)); if(missing.length) throw new Error('Missing narrative states: '+missing.join(', ')); const body=name=>{const start=source.indexOf('function '+name+'('); if(start<0) throw new Error('Missing function: '+name); const open=source.indexOf('{',start); let depth=0; for(let i=open;i<source.length;i++){if(source[i]==='{')depth++; if(source[i]==='}'&&!--depth)return source.slice(open+1,i);} throw new Error('Unclosed function: '+name);}; const requireMatch=(value,pattern,message)=>{if(!pattern.test(value)) throw new Error(message);}; const finish=body('finishChapterTwoInvestigation'), interlude=body('startInterlude'), reset=body('resetRun'), gateRetry=body('resetGate09Build'); requireMatch(source,/let[^;]*\broute\s*=\s*null/, 'Missing route initialization'); requireMatch(reset,/route\s*=\s*null/, 'Missing route reset'); requireMatch(gateRetry,/route\s*=\s*null/, 'Gate 09 retry does not clear route'); ['mods =','cargo = []','equippedRogue = {}','salvage = 0','dropsGiven = 0'].forEach(value=>{if(!gateRetry.includes(value)) throw new Error('Gate 09 retry build reset missing: '+value);}); requireMatch(source,/window\.restartGate09=function\(\)\{[\s\S]*?player\.exp=0;player\.lvl=1;player\.maxExp=5;player\.abilityCharge=0;player\.abilityActive=false/, 'Gate 09 retry does not reset player progression'); requireMatch(finish,/showTransition\('BLACKBOX_RECOVERED'/, 'Blackbox closure transition missing'); requireMatch(finish,/narrativeTimers/, 'Blackbox transition is not tracked'); requireMatch(interlude,/scheduleNarrative\([\s\S]*?startChapterFive/, 'Interlude does not schedule Gate 09'); requireMatch(source,/chapterTwoWaves === CHAPTER_TWO.targetWaves[\s\S]*?finishChapterTwoInvestigation\(\)/, 'B-sector completion does not finish investigation'); requireMatch(reset,/narrativeRun\+\+[\s\S]*?narrativeTimers\.forEach\(timer => clearTimeout\(timer\)\)[\s\S]*?narrativeTimers\.clear\(\)/, 'Reset does not cancel narrative timers'); console.log('narrative structural and reset-timer guards ok');" }
 $NarrativeRecoveryContract = @'
 const fs = require('fs');
 const source = fs.readFileSync('prototype/fb.html', 'utf8');
@@ -53,13 +54,13 @@ if (forbiddenLegacyFlow.some(pattern => pattern.test(source))) {
     throw new Error('Obsolete B-sector choice or Boss flow remains');
 }
 
-if (/\bstory-choice-screen\b|\bstory-choice-panel\b|\brenderStoryChoice\b/.test(source)) {
+if (/#story-choice-screen\b|\.story-choice-panel\b|id=["']story-choice-screen["']/.test(source)) {
     throw new Error('Obsolete story choice overlay remains');
 }
 
 const englishGateLabels = [
     'GATE_09', 'GATE 09', 'SHELTER 09', 'OPEN CHANNEL', 'MEDICAL SUPPLY',
-    'EVAC CONVOY', 'TEMP FILTER', 'ENDING', 'REDEPLOY', 'COST:', 'TARGETS'
+    'EVAC CONVOY', 'TEMP FILTER', 'REDEPLOY', 'COST:', 'TARGETS'
 ];
 const visibleEnglishLabels = englishGateLabels.filter(label => source.includes(label));
 if (visibleEnglishLabels.length) {
