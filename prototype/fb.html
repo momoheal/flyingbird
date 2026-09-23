@@ -65,7 +65,6 @@
         .upgrade-card { background: rgba(13,24,29,.92); border: 1px solid #3c6672; width: 220px; padding: 18px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; color: #e9f7fa; box-shadow: 0 10px 22px rgba(0,0,0,.32); position: relative; overflow: hidden; }
         .upgrade-card::before { content: ""; position: absolute; inset: 0; background-image: var(--ui-frame); background-size: cover; background-position: center; opacity: .16; pointer-events: none; mix-blend-mode: screen; }
         .upgrade-card:hover { transform: translateY(-5px); border-color: #12b6d1; background: rgba(18,34,41,.96); box-shadow: 0 18px 30px rgba(0,0,0,.36);}
-        .branch-art { width: 58px; height: 58px; margin-bottom: 12px; background: center / contain no-repeat; flex: 0 0 58px; }
         .card-empire { border-top: 3px solid #33ccff; }
         .card-rebel { border-top: 3px solid #ff6600; }
         .card-type { font-size: 12px; color: #a9cbd3; margin-bottom: 10px; font-family: monospace; position: relative;}
@@ -286,6 +285,48 @@
             maxActiveMinions: 14
         };
 
+        const STORY_CHAPTERS = {
+            ch03: {
+                state: 'CH03_PLAY', title: '第三章：旧友的倒戈', subtitle: 'C 区通信中继 // 名单与公开',
+                waves: 3, mode: 'survive', shelter: '公共证据中继', intro: 'ch03.intro', result: 'ch03.result', next: 'ch04'
+            },
+            ch04: {
+                state: 'CH04_PLAY', title: '第四章：锈蚀的航路', subtitle: '废弃维修站 // 接口与过滤记录',
+                waves: 3, mode: 'collectUpload', shelter: '离线过滤站', intro: 'ch04.intro', result: 'ch04.result', next: 'gate09',
+                objectiveLabel: '锈蚀实验记录', objectiveColor: '#b4d77b'
+            },
+            ch06: {
+                state: 'CH06_PLAY', title: '第六章：名字的重量', subtitle: 'B 区封锁外缘 // 船队与牵引束',
+                waves: 3, mode: 'destroy', shelter: '难民船队', intro: 'ch06.intro', result: 'ch06.result', next: 'ch09.rebel',
+                objectiveLabel: '帝国牵引锁', objectiveColor: '#ffae68'
+            },
+            ch07: {
+                state: 'CH07_PLAY', title: '第七章：安静的胜利', subtitle: 'C 区档案库 // 医疗线与名单',
+                waves: 3, mode: 'destroy', shelter: '医疗补给线', intro: 'ch07.intro', result: 'ch07.result', next: 'ch09.empire',
+                objectiveLabel: '档案火控中继', objectiveColor: '#8cecf7'
+            },
+            ch08: {
+                state: 'CH08_PLAY', title: '第八章：深岩之下', subtitle: '地下联合体 // 过滤核心与公开复核',
+                waves: 3, mode: 'collectUpload', shelter: '深岩临时过滤舱', intro: 'ch08.intro', result: 'ch08.result', next: 'ch09.deep',
+                objectiveLabel: '过滤核心', objectiveColor: '#b4d77b'
+            },
+            'ch09.rebel': {
+                state: 'CH09_PLAY', title: '第九章：航路仲裁者', subtitle: '赵利俄斯外环 // 广播塔与帝国旗舰',
+                waves: 4, mode: 'destroy', shelter: '公共广播塔', intro: 'ch09.rebel.intro', result: 'ending.rebel.result', finale: true,
+                objectiveLabel: '旗舰锁定阵列', objectiveColor: '#ffae68'
+            },
+            'ch09.empire': {
+                state: 'CH09_PLAY', title: '第九章：航路仲裁者', subtitle: '赵利俄斯外环 // 深岩船与火控链',
+                waves: 4, mode: 'destroy', shelter: '深岩运输船', intro: 'ch09.empire.intro', result: 'ending.empire.result', finale: true,
+                objectiveLabel: '帝国火控链', objectiveColor: '#8cecf7'
+            },
+            'ch09.deep': {
+                state: 'CH09_PLAY', title: '第九章：航路仲裁者', subtitle: '赵利俄斯外环 // 三方广播窗口',
+                waves: 4, mode: 'collectUpload', shelter: '公共广播塔', intro: 'ch09.deep.intro', result: 'ending.deep_rock.result', finale: true,
+                objectiveLabel: '广播过滤核心', objectiveColor: '#b4d77b'
+            }
+        };
+
         const ASSET_PATHS = {
             backgrounds: {
                 ch01: '../art/sf_ch01_bg_sector_a_scrapyard_source.png',
@@ -327,17 +368,9 @@
                     interceptor: '../assets/ch02/enemy/sf_ch02_enemy_quarantine_interceptor_512.png',
                     drone: '../assets/ch02/enemy/sf_ch02_enemy_inspection_drone_512.png'
                 },
-                bosses: {
-                    purifier: '../assets/ch02/boss/sf_ch02_boss_purification_cruiser_2048.png',
-                    runner: '../assets/ch02/boss/sf_ch02_boss_convoy_runner_2048.png'
-                },
                 fx: {
                     beacon: '../assets/ch02/fx/sf_ch02_fx_distress_beacon_sheet_1024x512.png',
                     scan: '../assets/ch02/fx/sf_ch02_fx_quarantine_scan_sheet_1024x512.png'
-                },
-                ui: {
-                    protect: '../assets/ch02/ui/sf_ch02_ui_route_protect_256.png',
-                    execute: '../assets/ch02/ui/sf_ch02_ui_route_execute_256.png'
                 }
             }
         };
@@ -347,7 +380,7 @@
         let pKey = 'alice';
         let bgScrollY = 0;
         let chapter = 1, route = null, scansCollected = 0, convoy = null, chapterTwoWaves = 0;
-        let gate09 = null;
+        let gate09 = null, storyChapter = null;
         let player, boss = null, bossSpawned = false, chapterCleared = false, wavesSpawned = 0, enemiesDestroyed = 0, lastEliteIndex = -1;
         let rescuePod = null, rescueScanProgress = 0, openingFrame = 0, openingTimers = [], storyTimers = [];
         let storyEvidence = new Set();
@@ -494,9 +527,7 @@
             SPRITES.ch02 = {
                 convoy: loadSprite(ASSET_PATHS.ch02.convoy),
                 enemies: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.enemies).map(([key, path]) => [key, loadSprite(path)])),
-                bosses: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.bosses).map(([key, path]) => [key, loadSprite(path)])),
-                fx: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.fx).map(([key, path]) => [key, loadSprite(path)])),
-                ui: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.ui).map(([key, path]) => [key, loadSprite(path)]))
+                fx: Object.fromEntries(Object.entries(ASSET_PATHS.ch02.fx).map(([key, path]) => [key, loadSprite(path)]))
             };
             hydrateStaticArt();
         }
@@ -753,13 +784,6 @@
             ctx.restore();
         }
 
-        function drawChapterTwoBossSprite(key, x, y, width, height) {
-            const sprite = SPRITES.ch02 && SPRITES.ch02.bosses[key];
-            if(!isLoaded(sprite)) return false;
-            drawReadableSprite(ctx, sprite, x - width / 2, y - height / 2, width, height);
-            return true;
-        }
-
         // --- 核心游戏类 ---
 
         class Player {
@@ -770,7 +794,7 @@
                 this.abilityCharge = 0; this.abilityActive = 0; this.invuln = 0;
             }
             update() {
-                if(state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH05_PLAY' || state === 'ENDING_PLAY' || state === 'CH01_BRIEFING' || state === 'CH01_RESCUE') {
+                if(state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH05_PLAY' || state === 'ENDING_PLAY' || state === 'CH01_BRIEFING' || state === 'CH01_RESCUE' || (storyChapter && state === storyChapter.config.state)) {
                     let spd = PILOTS[pKey].spd;
                     if(this.abilityActive > 0 && pKey === 'alice') spd *= 1.65;
                     this.x += (this.tx-this.x)*spd; this.y += (this.ty-this.y)*spd;
@@ -780,7 +804,7 @@
                     let fr = Math.floor(PILOTS[pKey].fr / mods.haste);
                     // Scanning remains an active flight state: keep automatic fire enabled
                     // during rescue/beacon scans, while the opening briefing stays weapon-locked.
-                    if((state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH05_PLAY' || state === 'ENDING_PLAY' || state === 'CH01_RESCUE') && frame % Math.max(3, fr) === 0) this.shoot();
+                    if((state === 'PLAYING' || state === 'CH02_PLAY' || state === 'CH05_PLAY' || state === 'ENDING_PLAY' || state === 'CH01_RESCUE' || (storyChapter && state === storyChapter.config.state)) && frame % Math.max(3, fr) === 0) this.shoot();
                     this.abilityCharge = Math.min(100, this.abilityCharge + (pKey === 'bob' ? 0.26 : 0.18));
                     if(this.abilityActive > 0) this.abilityActive--;
                     if(this.invuln > 0) this.invuln--;
@@ -835,6 +859,7 @@
                 explode(this.x, this.y, '#f33');
                 if(this.hp <= 0) {
                     if(chapter === 2) failChapterTwo();
+                    else if(storyChapter && state === storyChapter.config.state) failStoryChapter();
                     else if(chapter === 5) failGate09();
                     else endRun(false);
                 }
@@ -850,7 +875,8 @@
                 explode(this.x, this.y, '#55ff88');
             }
             useAbility() {
-                if((state !== 'PLAYING' && state !== 'CH02_PLAY' && state !== 'CH05_PLAY' && state !== 'ENDING_PLAY') || this.abilityCharge < 100) return;
+                const storyPlayable = storyChapter && state === storyChapter.config.state;
+                if((state !== 'PLAYING' && state !== 'CH02_PLAY' && state !== 'CH05_PLAY' && state !== 'ENDING_PLAY' && !storyPlayable) || this.abilityCharge < 100) return;
                 this.abilityCharge = 0;
                 if(pKey === 'alice') {
                     this.abilityActive = 150; this.invuln = 150;
@@ -858,7 +884,8 @@
                 } else if(pKey === 'bob') {
                     this.abilityActive = 120;
                     const gateTargets = gate09 ? gate09.objectives.filter(target => target.active && !target.collectible) : [];
-                    const targets = [...entities.ens, boss, ...gateTargets].filter(Boolean).slice(0, 12);
+                    const chapterTargets = storyChapter ? storyChapter.objectives.filter(target => target.active && !target.collectible) : [];
+                    const targets = [...entities.ens, boss, ...gateTargets, ...chapterTargets].filter(Boolean).slice(0, 12);
                     targets.forEach(t => {
                         entities.missiles.push(new HomingMissile(this.x, this.y, t, '#33ccff', 125));
                         if(t && t !== boss && t.v) t.v.y *= 0.45;
@@ -1268,9 +1295,10 @@
             update() {
                 if(!this.active) return;
                 if(this.collectible && player && Math.hypot(player.x - this.x, player.y - this.y) < player.r + this.r + 12) {
+                    const encounter = storyChapter || gate09;
                     this.active = false;
-                    gate09.coresCollected++;
-                    showToast(`过滤核心回收 ${gate09.coresCollected}/3`);
+                    encounter.coresCollected++;
+                    showToast(`过滤核心回收 ${encounter.coresCollected}/3`);
                     explode(this.x, this.y, this.color);
                     return;
                 }
@@ -1744,9 +1772,199 @@
             scheduleStory(() => showDialogueId('interlude.location'), 4500);
             scheduleStory(() => {
                 clearDialogueQueue();
-                showTransition('第 09 隔离关口', '没有等待正确阵营的空间。下一次决定必须同时面对具体的人和系统性风险。', 2200, startChapterFive);
+                showTransition('C 区通信中继', '名单副本已经发出。旧友的分歧与两方舰队的追踪，让三人再也无法只执行同一份命令。', 2200, () => startStoryChapter('ch03'));
             }, 9000);
         }
+
+        function storyChapterNumber(key) {
+            const matched = key.match(/^ch(\d+)/);
+            return matched ? Number(matched[1]) : 9;
+        }
+
+        function buildStoryObjectives(config) {
+            if(config.mode === 'survive') return [];
+            const xs = [canvas.width * .25, canvas.width * .5, canvas.width * .75];
+            return xs.map((x, index) => new GateObjective({
+                label: `${config.objectiveLabel} ${index + 1}`,
+                x,
+                y: canvas.height * (.33 + (index % 2) * .14),
+                color: config.objectiveColor,
+                hp: config.mode === 'destroy' ? 440 : 420,
+                collectible: config.mode === 'collectUpload'
+            }));
+        }
+
+        function startStoryChapter(key) {
+            const config = STORY_CHAPTERS[key];
+            if(!config) return;
+            clearStoryTimers();
+            gate09 = null;
+            chapter = storyChapterNumber(key);
+            bgScrollY = 0;
+            generateBackground();
+            chapterFrame = 0;
+            entities = { pjs: [], epjs: [], ens: [], asteroids: [], gems: [], heals: [], particles: [], missiles: [], scanBeacons: [] };
+            storyChapter = {
+                key, config, shelter: new GateShelter(), waves: 0, objectives: [], coresCollected: 0,
+                uploadProgress: 0, uploadTarget: 320, pressureWaves: 0, completed: false
+            };
+            storyChapter.shelter.label = config.shelter;
+            storyChapter.objectives = buildStoryObjectives(config);
+            state = config.state;
+            updateStoryChapterHud();
+            showDialogueId(config.intro);
+            spawnStoryWave();
+        }
+
+        function spawnStoryWave() {
+            if(!storyChapter || storyChapter.waves >= storyChapter.config.waves) return;
+            const available = Math.max(0, CHAPTER_FIVE.maxActiveMinions - entities.ens.length);
+            const count = Math.min(2 + storyChapter.waves, available);
+            for(let i = 0; i < count; i++) entities.ens.push(new Enemy((i + storyChapter.waves) % 2 ? 'rust' : 'gate'));
+            storyChapter.waves++;
+        }
+
+        function updateStoryChapterHud() {
+            if(!storyChapter) return;
+            const current = storyChapter;
+            const integrity = Math.max(0, Math.ceil(current.shelter.hp / current.shelter.maxHp * 100));
+            let progress = `防线 ${integrity}% // 波次 ${current.waves}/${current.config.waves}`;
+            if(current.config.mode === 'destroy') progress = `${current.config.objectiveLabel} ${current.objectives.filter(target => target.active).length}/${current.objectives.length} // ${current.shelter.label} ${integrity}%`;
+            if(current.config.mode === 'collectUpload') progress = `${current.config.objectiveLabel} ${current.coresCollected}/3 // 上传 ${Math.floor(current.uploadProgress / current.uploadTarget * 100)}%`;
+            setMission(current.config, progress);
+            document.getElementById('comm-text').innerText = current.config.mode === 'survive'
+                ? `守住${current.shelter.label}，让名单和航迹能继续被听见。`
+                : current.config.mode === 'destroy'
+                    ? `摧毁${current.config.objectiveLabel}，并保证${current.shelter.label}不被两方火力吞没。`
+                    : `回收${current.config.objectiveLabel}，在${current.shelter.label}旁完成公开上传。`;
+        }
+
+        function damageStoryObjectives(projectile) {
+            if(!storyChapter || storyChapter.config.mode !== 'destroy') return false;
+            for(const target of storyChapter.objectives) {
+                if(!target.active || (projectile.hit && projectile.hit.has(target))) continue;
+                if(projectileHits(projectile, target)) {
+                    target.hit(projectile.dmg || 1);
+                    if(projectile.hit) projectile.hit.add(target);
+                    showPierceFeedback(projectile);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function updateStoryChapterCombat() {
+            if(!storyChapter) return;
+            const current = storyChapter;
+            chapterFrame++;
+            if(current.waves < current.config.waves && chapterFrame % CHAPTER_FIVE.waveIntervalFrames === 0) spawnStoryWave();
+            current.shelter.draw();
+            entities.ens.forEach(enemy => {
+                enemy.update();
+                entities.pjs.forEach((projectile, index) => {
+                    if(enemy.dead || projectile.hit.has(enemy)) return;
+                    if(projectileHits(projectile, enemy)) {
+                        enemy.hp -= projectile.dmg; projectile.hit.add(enemy); explode(projectile.x, projectile.y, projectile.c); showPierceFeedback(projectile);
+                        if(!projectile.p) entities.pjs.splice(index, 1);
+                        if(enemy.hp <= 0) killEnemy(enemy);
+                    }
+                });
+                entities.missiles.forEach((missile, index) => {
+                    if(!enemy.dead && Math.hypot(missile.x - enemy.x, missile.y - enemy.y) < enemy.r + missile.r) {
+                        enemy.hp -= missile.dmg; explode(missile.x, missile.y, missile.c); entities.missiles.splice(index, 1);
+                        if(enemy.hp <= 0) killEnemy(enemy);
+                    }
+                });
+                if(!enemy.dead && Math.hypot(current.shelter.x - enemy.x, current.shelter.y - enemy.y) < current.shelter.r + enemy.r) {
+                    const destroyed = current.shelter.damage(enemy.damage); enemy.dead = true; explode(enemy.x, enemy.y, '#c7de88');
+                    if(destroyed) failStoryChapter();
+                } else if(!enemy.dead && Math.hypot(player.x - enemy.x, player.y - enemy.y) < player.r + enemy.r) {
+                    player.damage(enemy.damage);
+                }
+            });
+            if(current.config.mode !== 'survive') {
+                current.objectives.forEach(objective => objective.update());
+                if(current.config.mode === 'destroy') {
+                    entities.pjs.forEach((projectile, index) => { if(damageStoryObjectives(projectile) && !projectile.p) entities.pjs.splice(index, 1); });
+                    entities.missiles.forEach((missile, index) => { if(damageStoryObjectives(missile)) entities.missiles.splice(index, 1); });
+                }
+                if(current.config.mode === 'collectUpload' && current.coresCollected >= 3 && Math.hypot(player.x - current.shelter.x, player.y - current.shelter.y) < player.r + current.shelter.r + 26) {
+                    current.uploadProgress = Math.min(current.uploadTarget, current.uploadProgress + 1);
+                }
+            }
+            entities.epjs.forEach((bullet, index) => {
+                bullet.update();
+                if(Math.hypot(current.shelter.x - bullet.x, current.shelter.y - bullet.y) < current.shelter.r + bullet.r) {
+                    const destroyed = current.shelter.damage(bullet.dmg); entities.epjs.splice(index, 1); if(destroyed) failStoryChapter();
+                } else if(Math.hypot(player.x - bullet.x, player.y - bullet.y) < player.r + bullet.r) {
+                    player.damage(bullet.dmg); entities.epjs.splice(index, 1);
+                }
+            });
+            entities.pjs.forEach(projectile => projectile.update());
+            entities.missiles.forEach(missile => missile.update());
+            entities.particles.forEach(particle => particle.update());
+            player.update();
+            entities.pjs = entities.pjs.filter(projectile => projectile.y > -220 && projectile.y < canvas.height + 80 && projectile.x > -80 && projectile.x < canvas.width + 80);
+            entities.epjs = entities.epjs.filter(bullet => bullet.y < canvas.height + 80 && bullet.x > -80 && bullet.x < canvas.width + 80);
+            entities.missiles = entities.missiles.filter(missile => missile.life > 0 && missile.y > -80 && missile.y < canvas.height + 80 && missile.x > -80 && missile.x < canvas.width + 80);
+            entities.ens = entities.ens.filter(enemy => enemy.hp > 0 && !enemy.dead);
+            entities.particles = entities.particles.filter(particle => particle.a > 0);
+            updateStoryChapterHud();
+            const objectiveDone = current.config.mode === 'survive'
+                ? current.waves === current.config.waves && entities.ens.length === 0
+                : current.config.mode === 'destroy'
+                    ? current.objectives.length && current.objectives.every(objective => !objective.active)
+                    : current.coresCollected >= 3 && current.uploadProgress >= current.uploadTarget;
+            const wavesCleared = current.waves === current.config.waves && entities.ens.length === 0;
+            if(objectiveDone && wavesCleared) completeStoryChapter();
+        }
+
+        function completeStoryChapter() {
+            if(!storyChapter || storyChapter.completed) return;
+            const current = storyChapter;
+            current.completed = true;
+            entities.ens = []; entities.epjs = []; entities.pjs = []; entities.missiles = [];
+            showDialogueId(current.config.result);
+            if(current.config.finale) {
+                state = 'ENDING_RESULT';
+                showFullCampaignResult(current.key);
+                return;
+            }
+            state = 'STORY_TRANSITION';
+            const next = current.config.next;
+            const transition = next === 'gate09'
+                ? { title: '第 09 隔离关口', text: '锈蚀记录、位置包和塌方告警同时抵达。没有等待正确阵营的空间。', callback: startChapterFive }
+                : { title: STORY_CHAPTERS[next].title, text: '上一段航线留下的证据和伤口都没有消失，下一段行动已经开始。', callback: () => startStoryChapter(next) };
+            showTransition(transition.title, transition.text, 2600, transition.callback);
+        }
+
+        function showFullCampaignResult(key) {
+            const ending = {
+                'ch09.rebel': { title: '全线结局：名字的重量', body: '从赵利俄斯护航战到广播塔，船队终于把被抹掉的名字送回公共频道。自由仍需承担锈蚀与余烬狂热留下的后果。' },
+                'ch09.empire': { title: '全线结局：安静的胜利之后', body: '封门、医疗缝隙与档案火控链都留下痕迹。广播让帝国无法继续把沉默写成稳定，Alice 也不再把服从当成答案。' },
+                'ch09.deep': { title: '全线结局：深岩之下', body: '深岩把过滤、隔绝和公开复核留给每一个活下来的人。这里没有替所有人做决定的机器，只有持续协商的责任。' }
+            }[key];
+            document.querySelector('.rogue-title').innerText = ending.title;
+            document.getElementById('rogue-note').innerText = ending.body;
+            document.getElementById('cards-container').innerHTML = '<button onclick="restartRun()">重新部署</button>';
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        function failStoryChapter() {
+            if(!storyChapter || state !== storyChapter.config.state) return;
+            state = 'STORY_FAILED';
+            const key = storyChapter.key;
+            document.querySelector('.rogue-title').innerText = `MISSION_FAILED // ${storyChapter.config.title}`;
+            document.getElementById('rogue-note').innerText = `${storyChapter.shelter.label}失守。保留当前驾驶员与改装，从本章开头重试。`;
+            document.getElementById('cards-container').innerHTML = `<button onclick="restartStoryChapter('${key}')">重试本章</button>`;
+            document.getElementById('rogue-screen').classList.remove('hidden');
+        }
+
+        window.restartStoryChapter = function(key) {
+            document.getElementById('rogue-screen').classList.add('hidden');
+            resetPlayerForChapterRetry();
+            startStoryChapter(key);
+        };
 
         function resetPlayerForChapterRetry() {
             if(!player) return;
@@ -1786,6 +2004,7 @@
         }
 
         function startChapterFive() {
+            storyChapter = null;
             chapter = 5;
             route = null;
             bgScrollY = 0;
@@ -1902,19 +2121,16 @@
 
         function completeGateRoute() {
             if(state !== 'ENDING_PLAY') return;
-            state = 'ENDING_RESULT';
+            state = 'STORY_TRANSITION';
             entities.ens = []; entities.epjs = []; entities.pjs = []; entities.missiles = [];
-            const info = {
-                seal_gate: { id: 'ending.empire.result', title: '结局：安静的胜利', body: '医疗通道仍在运转，永久门已经闭合。秩序维持了，但白噪不会替任何人原谅这道门。' },
-                break_blockade: { id: 'ending.rebel.result', title: '结局：名字的重量', body: '船队获得了窗口，也带走了感染风险与余烬狂热派留下的责任。没有人应被当成货物，也没有人能假装后果不存在。' },
-                deep_rock: { id: 'ending.deep_rock.result', title: '结局：深岩之下', body: '临时过滤舱成为工人、医生和工程师共同维持的缝隙。资源不足、隔绝与公开复核将继续很久。' }
-            }[route];
-            clearDialogueQueue();
-            showDialogueId(info.id);
-            document.querySelector('.rogue-title').innerText = info.title;
-            document.getElementById('rogue-note').innerText = info.body;
-            document.getElementById('cards-container').innerHTML = '<button onclick="restartRun()">重新部署</button>';
-            document.getElementById('rogue-screen').classList.remove('hidden');
+            const next = { seal_gate: 'ch07', break_blockade: 'ch06', deep_rock: 'ch08' }[route];
+            const titles = { seal_gate: '第七章：安静的胜利', break_blockade: '第六章：名字的重量', deep_rock: '第八章：深岩之下' };
+            const texts = {
+                seal_gate: '永久门开始闭合。医疗线留下了一条缝，名单与档案库的争夺仍在继续。',
+                break_blockade: '船队穿过窗口。Bob 的旗舰、余烬的狂热派与传播风险都没有离开航线。',
+                deep_rock: '塌方区的人被拖进临时过滤舱。工人、医生与工程师准备把这条缝变成深岩。'
+            };
+            showTransition(titles[route], texts[route], 2600, () => startStoryChapter(next));
         }
 
         function failGate09() {
@@ -1940,7 +2156,7 @@
             clearDialogueQueue();
             rescuePod = null; rescueScanProgress = 0; openingFrame = 0;
             frame = 0; score = 0; chapterFrame = 0; boss = null; bossSpawned = false; chapterCleared = false; wavesSpawned = 0; enemiesDestroyed = 0; lastEliteIndex = -1;
-            chapter = 1; route = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0; gate09 = null;
+            chapter = 1; route = null; scansCollected = 0; convoy = null; chapterTwoWaves = 0; gate09 = null; storyChapter = null;
             storyEvidence = new Set();
             bgScrollY = 0;
             generateBackground();
@@ -2492,6 +2708,8 @@
                 updateChapterTwoCombat();
             } else if(state === 'CH05_PLAY' || state === 'ENDING_PLAY') {
                 updateGateCombat();
+            } else if(storyChapter && state === storyChapter.config.state) {
+                updateStoryChapterCombat();
             } else if (state === 'BOSS_CRASH') {
                 if(bossCrash) {
                     const done = bossCrash.update();
@@ -2552,7 +2770,7 @@
         };
 
         document.getElementById('skip-story').onclick = finishPrologue;
-        function isFlightState() { return ['PLAYING', 'CH02_PLAY', 'CH05_PLAY', 'ENDING_PLAY', 'CH01_BRIEFING', 'CH01_RESCUE'].includes(state); }
+        function isFlightState() { return ['PLAYING', 'CH02_PLAY', 'CH05_PLAY', 'ENDING_PLAY', 'CH01_BRIEFING', 'CH01_RESCUE'].includes(state) || !!(storyChapter && state === storyChapter.config.state); }
         window.onmousemove = e => { if(player && isFlightState()) { player.tx=e.clientX; player.ty=e.clientY; } };
         window.ontouchmove = e => { if(player && isFlightState()) { player.tx=e.touches[0].clientX; player.ty=e.touches[0].clientY-60; e.preventDefault(); } };
         window.onkeydown = e => {
